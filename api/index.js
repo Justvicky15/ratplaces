@@ -1,37 +1,59 @@
 const fs = require('fs');
 const path = require('path');
 
-// Parse request body for serverless environments
+// Enhanced body parsing for serverless with better error handling
 async function parseBody(req) {
   return new Promise((resolve, reject) => {
-    let body = '';
+    const chunks = [];
+    let totalSize = 0;
+    const maxSize = 10 * 1024 * 1024; // 10MB limit
     
+    const cleanup = () => {
+      req.removeAllListeners('data');
+      req.removeAllListeners('end');
+      req.removeAllListeners('error');
+    };
+
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error('Request timeout - body parsing took too long'));
+    }, 15000); // Reduced timeout for better performance
+
     req.on('data', (chunk) => {
-      body += chunk.toString('utf8');
+      totalSize += chunk.length;
+      if (totalSize > maxSize) {
+        cleanup();
+        clearTimeout(timeout);
+        reject(new Error('Request body too large'));
+        return;
+      }
+      chunks.push(chunk);
     });
     
     req.on('end', () => {
+      cleanup();
+      clearTimeout(timeout);
+      
       try {
+        const body = Buffer.concat(chunks).toString('utf8');
         if (body.trim()) {
-          resolve(JSON.parse(body));
+          const parsed = JSON.parse(body);
+          resolve(parsed);
         } else {
           resolve({});
         }
       } catch (error) {
-        console.error('JSON parse error:', error);
-        reject(new Error('Invalid JSON'));
+        console.error('JSON parse error:', error.message);
+        reject(new Error('Invalid JSON format'));
       }
     });
     
     req.on('error', (error) => {
-      console.error('Request error:', error);
-      reject(error);
+      cleanup();
+      clearTimeout(timeout);
+      console.error('Request stream error:', error.message);
+      reject(new Error('Request stream error'));
     });
-    
-    // Timeout after 30 seconds for Vercel
-    setTimeout(() => {
-      reject(new Error('Request timeout'));
-    }, 30000);
   });
 }
 
@@ -92,17 +114,44 @@ function trackVisitor(req) {
   }
 }
 
-// Security headers for production
+// Enhanced security headers optimized for Vercel
 function setSecurityHeaders(res) {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  try {
+    // Security headers
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    
+    // CORS headers - optimized for multiple domains
+    const allowedOrigins = [
+      'https://ratplace.online',
+      'https://www.ratplace.online', 
+      'https://ratplaces.vercel.app',
+      'https://ratplaces-*.vercel.app', // Vercel preview deployments
+      'http://localhost:3000',
+      'http://localhost:5000'
+    ];
+    
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow all for now, can be restricted later
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24h
+    
+    // Content headers
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    
+    // Cache control - optimized for API responses
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
+    return true;
+  } catch (error) {
+    console.error('Error setting headers:', error.message);
+    return false;
+  }
 }
 
 // Enhanced input sanitization
@@ -181,34 +230,59 @@ function safeFileOperation(filepath, operation) {
   }
 }
 
-// Main serverless handler
+// Main serverless handler - optimized for Vercel
 module.exports = async (req, res) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url || '/'}`);
+  const startTime = Date.now();
+  const requestId = Math.random().toString(36).substr(2, 9);
   
-  // Set security headers
-  setSecurityHeaders(res);
+  console.log(`[${new Date().toISOString()}] [${requestId}] ${req.method} ${req.url || '/'}`);
   
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  const url = req.url || '';
-  const method = req.method;
-
   try {
-    // Parse request body for POST/PUT requests
+    // Set security headers first
+    if (!setSecurityHeaders(res)) {
+      return res.status(500).json({
+        success: false,
+        error: 'Server configuration error',
+        requestId,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // Handle CORS preflight requests immediately
+    if (req.method === 'OPTIONS') {
+      console.log(`[${requestId}] CORS preflight handled in ${Date.now() - startTime}ms`);
+      return res.status(200).end();
+    }
+
+    const url = req.url || '';
+    const method = req.method;
+    
+    // Validate method
+    const allowedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD'];
+    if (!allowedMethods.includes(method)) {
+      return res.status(405).json({
+        success: false,
+        error: 'Method not allowed',
+        message: `${method} method is not supported`,
+        requestId,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Parse request body for POST/PUT requests with better error handling
     let body = {};
     if (['POST', 'PUT', 'PATCH'].includes(method)) {
       try {
         body = await parseBody(req);
-        console.log('Request body parsed successfully');
+        console.log(`[${requestId}] Request body parsed successfully`);
       } catch (error) {
-        console.error('Body parsing failed:', error);
+        console.error(`[${requestId}] Body parsing failed:`, error.message);
         return res.status(400).json({ 
           success: false, 
           error: 'Invalid request body',
-          message: 'Please ensure your request contains valid JSON data'
+          message: error.message || 'Please ensure your request contains valid JSON data',
+          requestId,
+          timestamp: new Date().toISOString()
         });
       }
     }
@@ -897,22 +971,47 @@ module.exports = async (req, res) => {
       });
     }
 
+    // Health check endpoint
+    if (url === '/api/health') {
+      trackVisitor(req);
+      const processingTime = Date.now() - startTime;
+      return res.status(200).json({
+        success: true,
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime ? process.uptime() : 0,
+        version: '1.0.0',
+        processingTime: `${processingTime}ms`,
+        requestId
+      });
+    }
+
     // 404 for unknown endpoints
-    console.log('Unknown endpoint requested:', url);
+    const processingTime = Date.now() - startTime;
+    console.log(`[${requestId}] Unknown endpoint requested: ${url} (${processingTime}ms)`);
     return res.status(404).json({ 
       success: false,
       error: 'Endpoint not found',
       message: `The requested endpoint '${url}' does not exist`,
-      availableEndpoints: ['/api/auth', '/api/programs', '/api/programs/{id}', '/api/announcements', '/api/analytics', '/api/health']
+      availableEndpoints: ['/api/auth', '/api/programs', '/api/programs/{id}', '/api/announcements', '/api/analytics', '/api/vote', '/api/votes/{id}', '/api/health'],
+      requestId,
+      timestamp: new Date().toISOString()
     });
 
   } catch (error) {
-    console.error('API Error:', error);
+    const processingTime = Date.now() - startTime;
+    console.error(`[${requestId}] API Error (${processingTime}ms):`, error.message);
+    
+    // Don't expose internal error details in production
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+    
     return res.status(500).json({ 
       success: false,
       error: 'Internal server error',
-      message: 'An unexpected error occurred. Please try again later.',
-      timestamp: new Date().toISOString()
+      message: isProduction ? 'An unexpected error occurred. Please try again later.' : error.message,
+      requestId,
+      timestamp: new Date().toISOString(),
+      ...(isProduction ? {} : { stack: error.stack })
     });
   }
 };
