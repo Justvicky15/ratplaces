@@ -10,7 +10,7 @@
     <meta property="og:title" content="RatPlace - Digital Marketplace">
     <meta property="og:description" content="Professional tools and software solutions for security researchers and developers">
     <meta property="og:image" content="https://ratplace.online/preview.png">
-    <meta property="og:url" content="https://ratplace.online/">
+    <meta property="og:url" id="og-url" content="">
     <meta property="og:type" content="website">
     <meta name="theme-color" content="#8b5cf6">
     
@@ -158,6 +158,87 @@
             top: 50%;
             transform: translateY(-50%);
             color: #94a3b8;
+        }
+
+        /* Announcements Section */
+        .announcements {
+            padding: 2rem;
+            margin: 0 2rem 2rem;
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 16px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .announcements h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            color: #8b5cf6;
+        }
+
+        .announcements-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .announcement-card {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            transition: all 0.3s;
+        }
+
+        .announcement-card:hover {
+            border-color: #8b5cf6;
+            transform: translateY(-2px);
+        }
+
+        .announcement-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .announcement-avatar {
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(139, 92, 246, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .announcement-meta {
+            flex: 1;
+        }
+
+        .announcement-author {
+            color: #8b5cf6;
+            font-size: 0.9rem;
+        }
+
+        .announcement-time {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            display: block;
+        }
+
+        .announcement-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 0.75rem;
+            color: #e2e8f0;
+        }
+
+        .announcement-message {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            line-height: 1.4;
         }
 
         /* Marketplace Section */
@@ -481,6 +562,14 @@
             </div>
         </section>
 
+        <!-- Announcements Section -->
+        <section class="announcements" id="announcements" data-testid="announcements-section">
+            <h2>📢 Latest Announcements</h2>
+            <div id="announcementsContainer">
+                <!-- Announcements will be loaded here -->
+            </div>
+        </section>
+
         <!-- Marketplace Section -->
         <section class="marketplace" id="marketplace">
             <h2>Marketplace</h2>
@@ -523,8 +612,31 @@
         let currentPrograms = [];
         let userVotes = {};
         
+        // Set dynamic URLs based on current domain
+        function setDynamicUrls() {
+            const currentUrl = window.location.origin;
+            document.getElementById('og-url').setAttribute('content', currentUrl + '/');
+        }
+
+        // Get API base URL
+        function getApiBaseUrl() {
+            // Check if we're on Vercel or other domains
+            const hostname = window.location.hostname;
+            if (hostname.includes('vercel.app') || hostname.includes('ratplaces')) {
+                return 'https://ratplaces.vercel.app/api';
+            } else if (hostname.includes('ratplace.online')) {
+                return 'https://ratplace.online/api';
+            } else {
+                // Local development or Replit
+                return '/api';
+            }
+        }
+
         // Load programs on page load
         document.addEventListener('DOMContentLoaded', function() {
+            setDynamicUrls();
+            checkAuthStatus();
+            loadAnnouncements();
             loadPrograms();
             
             // Setup search
@@ -536,7 +648,10 @@
         // API Functions
         async function apiRequest(url, options = {}) {
             try {
-                const response = await fetch(url, {
+                // Use full URL if it already includes the base URL, otherwise prepend it
+                const fullUrl = url.startsWith('http') ? url : getApiBaseUrl() + url;
+                
+                const response = await fetch(fullUrl, {
                     headers: {
                         'Content-Type': 'application/json',
                         ...options.headers
@@ -552,22 +667,44 @@
 
         async function loadPrograms() {
             try {
-                const response = await apiRequest('/api/programs');
+                const response = await apiRequest('/programs');
                 if (response.success || Array.isArray(response)) {
                     currentPrograms = response.data || response;
+                    displayPrograms(currentPrograms);
+                } else if (Array.isArray(response)) {
+                    currentPrograms = response;
                     displayPrograms(currentPrograms);
                 } else {
                     showError('Failed to load programs');
                 }
             } catch (error) {
+                console.error('Error loading programs:', error);
                 showError('Failed to load programs');
+            }
+        }
+
+        async function loadAnnouncements() {
+            try {
+                const response = await apiRequest('/announcements');
+                if (response && response.success) {
+                    const announcements = response.data || [];
+                    displayAnnouncements(announcements);
+                } else if (Array.isArray(response)) {
+                    displayAnnouncements(response);
+                } else {
+                    console.log('No announcements available');
+                    displayAnnouncements([]);
+                }
+            } catch (error) {
+                console.error('Failed to load announcements:', error);
+                displayAnnouncements([]);
             }
         }
 
         async function loadVotes(programId) {
             try {
-                const response = await apiRequest(`/api/votes/${programId}`);
-                if (response.success) {
+                const response = await apiRequest(`/votes/${programId}`);
+                if (response && response.success) {
                     return response.data;
                 }
             } catch (error) {
@@ -578,11 +715,11 @@
 
         async function submitVote(programId, voteType) {
             try {
-                const response = await apiRequest('/api/vote', {
+                const response = await apiRequest('/vote', {
                     method: 'POST',
                     body: JSON.stringify({ programId, voteType })
                 });
-                if (response.success) {
+                if (response && response.success) {
                     return response.data;
                 }
             } catch (error) {
@@ -592,6 +729,48 @@
         }
 
         // Display Functions
+        function displayAnnouncements(announcements) {
+            const container = document.getElementById('announcementsContainer');
+            
+            if (!announcements || announcements.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const announcementsList = document.createElement('div');
+            announcementsList.className = 'announcements-list';
+            
+            announcements.slice(0, 3).forEach(announcement => {
+                const card = createAnnouncementCard(announcement);
+                announcementsList.appendChild(card);
+            });
+            
+            container.innerHTML = '';
+            container.appendChild(announcementsList);
+        }
+
+        function createAnnouncementCard(announcement) {
+            const card = document.createElement('div');
+            card.className = 'announcement-card';
+            card.dataset.testid = `announcement-${announcement.id}`;
+            
+            const timeAgo = getTimeAgo(new Date(announcement.createdAt));
+            
+            card.innerHTML = `
+                <div class="announcement-header">
+                    <span class="announcement-avatar">${announcement.avatar || '📢'}</span>
+                    <div class="announcement-meta">
+                        <strong class="announcement-author">${escapeHtml(announcement.username || 'Admin')}</strong>
+                        <span class="announcement-time">${timeAgo}</span>
+                    </div>
+                </div>
+                <h3 class="announcement-title">${escapeHtml(announcement.title)}</h3>
+                <p class="announcement-message">${escapeHtml(announcement.message)}</p>
+            `;
+            
+            return card;
+        }
+
         function displayPrograms(programs) {
             const container = document.getElementById('programsContainer');
             
@@ -742,16 +921,20 @@
             messageEl.innerHTML = '';
             
             try {
-                const response = await apiRequest('/api/auth', {
+                const response = await apiRequest('/auth', {
                     method: 'POST',
                     body: JSON.stringify({ username, password })
                 });
                 
                 if (response.success) {
-                    messageEl.innerHTML = '<div class="message success">Login successful! Redirecting to admin panel...</div>';
-                    setTimeout(() => {
-                        window.location.href = 'admin.html';
-                    }, 1000);
+                    // Store auth data
+                    localStorage.setItem('authToken', response.token);
+                    localStorage.setItem('adminUsername', response.username);
+                    localStorage.setItem('adminAvatar', response.avatar);
+                    
+                    messageEl.innerHTML = '<div class="message success">Login successful!</div>';
+                    hideLoginModal();
+                    updateAuthUI(response.username, response.avatar);
                 } else {
                     messageEl.innerHTML = `<div class="message error">${response.message || 'Login failed'}</div>`;
                 }
@@ -767,6 +950,25 @@
             return div.innerHTML;
         }
 
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diff = now - date;
+            const seconds = Math.floor(diff / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+
+            if (days > 0) {
+                return `${days} day${days > 1 ? 's' : ''} ago`;
+            } else if (hours > 0) {
+                return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            } else if (minutes > 0) {
+                return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+            } else {
+                return 'Just now';
+            }
+        }
+
         function showError(message) {
             document.getElementById('programsContainer').innerHTML = `
                 <div class="empty-state">
@@ -777,6 +979,38 @@
             `;
         }
 
+        // Authentication Functions
+        function checkAuthStatus() {
+            const token = localStorage.getItem('authToken');
+            const username = localStorage.getItem('adminUsername');
+            const avatar = localStorage.getItem('adminAvatar');
+            
+            if (token && username) {
+                updateAuthUI(username, avatar);
+            }
+        }
+        
+        function updateAuthUI(username, avatar) {
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('adminSection').style.display = 'flex';
+            document.getElementById('adminWelcome').textContent = `${avatar || '👤'} ${username}`;
+        }
+        
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('adminUsername');
+            localStorage.removeItem('adminAvatar');
+            
+            document.getElementById('loginBtn').style.display = 'inline-block';
+            document.getElementById('adminSection').style.display = 'none';
+        }
+        
+        function goToAdminPanel() {
+            // Store current auth state for admin panel
+            sessionStorage.setItem('adminLoggedIn', 'true');
+            window.location.href = 'admin.html';
+        }
+        
         // Close modal when clicking outside
         document.getElementById('loginModal').addEventListener('click', function(e) {
             if (e.target === this) {
