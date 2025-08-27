@@ -10,7 +10,7 @@
     <meta property="og:title" content="RatPlace - Admin Panel">
     <meta property="og:description" content="Secure admin panel for managing RatPlace digital marketplace">
     <meta property="og:image" content="https://ratplace.online/preview.png">
-    <meta property="og:url" content="https://ratplace.online/admin.html">
+    <meta property="og:url" id="admin-og-url" content="">
     <meta property="og:type" content="website">
     <meta name="theme-color" content="#8b5cf6">
     
@@ -678,6 +678,29 @@
     </div>
 
     <script>
+        // Set dynamic URLs based on current domain
+        function setDynamicUrls() {
+            const currentUrl = window.location.origin;
+            document.getElementById('admin-og-url').setAttribute('content', currentUrl + '/admin.html');
+        }
+
+        // Get API base URL
+        function getApiBaseUrl() {
+            // Check if we're on Vercel or other domains
+            const hostname = window.location.hostname;
+            if (hostname.includes('vercel.app') || hostname.includes('ratplaces')) {
+                return 'https://ratplaces.vercel.app/api';
+            } else if (hostname.includes('ratplace.online')) {
+                return 'https://ratplace.online/api';
+            } else {
+                // Local development or Replit
+                return '/api';
+            }
+        }
+
+        // Initialize
+        setDynamicUrls();
+
         // Check authentication - using the new auth system
         let adminToken = localStorage.getItem('authToken');
         const adminUsername = localStorage.getItem('adminUsername');
@@ -714,7 +737,7 @@
         async function loadDashboardData() {
             try {
                 // Load programs count
-                const programsResponse = await fetch('/api/programs');
+                const programsResponse = await fetch(getApiBaseUrl() + '/programs');
                 if (programsResponse.ok) {
                     const programsData = await programsResponse.json();
                     const programs = programsData.data || programsData;
@@ -722,7 +745,7 @@
                 }
 
                 // Load announcements count
-                const announcementsResponse = await fetch('/api/announcements');
+                const announcementsResponse = await fetch(getApiBaseUrl() + '/announcements');
                 if (announcementsResponse.ok) {
                     const announcementsData = await announcementsResponse.json();
                     const announcements = announcementsData.data || announcementsData;
@@ -730,7 +753,7 @@
                 }
 
                 // Load analytics data
-                const analyticsResponse = await fetch('/api/analytics', {
+                const analyticsResponse = await fetch(getApiBaseUrl() + '/analytics', {
                     headers: {
                         'Authorization': `Bearer ${adminToken}`
                     }
@@ -817,7 +840,7 @@
         // Load program management data
         async function loadManagePrograms() {
             try {
-                const response = await fetch('/api/programs');
+                const response = await fetch(getApiBaseUrl() + '/programs');
                 const result = await response.json();
                 const programs = result.data || result;
                 
@@ -870,7 +893,7 @@
         // Edit program function
         async function editProgram(programId) {
             try {
-                const response = await fetch(`/api/programs/${programId}`);
+                const response = await fetch(`${getApiBaseUrl()}/programs/${programId}`);
                 const result = await response.json();
                 const program = result.data;
                 
@@ -918,7 +941,7 @@
             }
             
             try {
-                const response = await fetch(`/api/programs/${programId}`, {
+                const response = await fetch(`${getApiBaseUrl()}/programs/${programId}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${adminToken}`
@@ -1036,7 +1059,7 @@
             messageDiv.innerHTML = '';
             
             try {
-                const response = await fetch('/api/announcements', {
+                const response = await fetch(getApiBaseUrl() + '/announcements', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
