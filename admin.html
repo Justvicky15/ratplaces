@@ -1181,6 +1181,7 @@
             if (confirm('Are you sure you want to logout?')) {
                 localStorage.removeItem('adminToken');
                 localStorage.removeItem('adminData');
+                localStorage.removeItem('isLoggedIn');
                 // Clear any other session data
                 sessionStorage.clear();
                 // Redirect to main page
@@ -1191,35 +1192,45 @@
         function checkAuth() {
             const token = localStorage.getItem('adminToken');
             const adminData = localStorage.getItem('adminData');
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
             
-            if (!token || !adminData) {
+            // Check if we have basic login markers
+            if (!token || !adminData || !isLoggedIn) {
                 // Clear any corrupted data
                 localStorage.removeItem('adminToken');
                 localStorage.removeItem('adminData');
+                localStorage.removeItem('isLoggedIn');
                 // Redirect to main page to login
-                window.location.href = '/';
+                window.location.href = '/?needsLogin=1';
                 return false;
             }
             
             try {
                 const data = JSON.parse(adminData);
-                // Check if login is still valid (optional: add expiration check)
-                const loginTime = new Date(data.loginTime);
-                const now = new Date();
-                const hoursSinceLogin = (now - loginTime) / (1000 * 60 * 60);
                 
-                // Auto-logout after 24 hours
-                if (hoursSinceLogin > 24) {
+                // Check if we have required user data
+                if (!data.username) {
+                    throw new Error('Invalid session data');
+                }
+                
+                // Check session expiration
+                const expiresAt = data.expiresAt || (new Date(data.loginTime).getTime() + (24 * 60 * 60 * 1000));
+                
+                // Auto-logout if session expired
+                if (Date.now() > expiresAt) {
+                    console.log('Session expired, logging out');
                     logout();
                     return false;
                 }
                 
                 return true;
-            } catch {
+            } catch (error) {
+                console.error('Auth check failed:', error);
                 // Invalid data format, clear and redirect
                 localStorage.removeItem('adminToken');
                 localStorage.removeItem('adminData');
-                window.location.href = '/';
+                localStorage.removeItem('isLoggedIn');
+                window.location.href = '/?needsLogin=1';
                 return false;
             }
         }
