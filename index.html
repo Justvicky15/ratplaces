@@ -16,22 +16,55 @@
         }
 
         :root {
-            --background: #000000;
-            --foreground: #ffffff;
-            --card: #0a0a0a;
-            --border: #262626;
-            --muted: #a1a1aa;
-            --primary: #ffffff;
+            --background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            --background-solid: #1a1a2e;
+            --foreground: #e2e8f0;
+            --card: rgba(30, 41, 59, 0.8);
+            --card-hover: rgba(51, 65, 85, 0.9);
+            --border: #334155;
+            --muted: #94a3b8;
+            --primary: #3b82f6;
             --destructive: #dc2626;
             --success: #22c55e;
+            --cloud-1: rgba(255, 255, 255, 0.1);
+            --cloud-2: rgba(255, 255, 255, 0.05);
+            --cloud-3: rgba(255, 255, 255, 0.08);
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: var(--background);
+            background-attachment: fixed;
             color: var(--foreground);
             min-height: 100vh;
             line-height: 1.5;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, var(--cloud-1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, var(--cloud-2) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, var(--cloud-3) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+            animation: cloudFloat 20s ease-in-out infinite alternate;
+        }
+        
+        @keyframes cloudFloat {
+            0% {
+                transform: translateX(-10px) translateY(-5px);
+            }
+            100% {
+                transform: translateX(10px) translateY(5px);
+            }
         }
 
         /* Header */
@@ -40,8 +73,9 @@
             top: 0;
             z-index: 50;
             border-bottom: 1px solid var(--border);
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(12px);
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(15px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
 
         .nav {
@@ -92,17 +126,20 @@
         }
 
         .btn-ghost:hover {
-            background: #262626;
+            background: rgba(51, 65, 85, 0.6);
+            backdrop-filter: blur(10px);
         }
 
         .btn-default {
             background: var(--primary);
-            color: var(--background);
+            color: #ffffff;
             border: 1px solid var(--border);
         }
 
         .btn-default:hover {
-            background: #e5e5e5;
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
         }
 
         /* Main Content */
@@ -117,6 +154,37 @@
             text-align: center;
             padding: 4rem 0;
             margin-bottom: 3rem;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.8) 0%, rgba(99, 102, 241, 0.8) 100%);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 30px rgba(59, 130, 246, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: heroGlow 8s ease-in-out infinite alternate;
+            z-index: 0;
+        }
+        
+        .hero > * {
+            position: relative;
+            z-index: 1;
+        }
+        
+        @keyframes heroGlow {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(180deg);
+            }
         }
 
         .hero h1 {
@@ -1004,18 +1072,24 @@
                     });
 
                     if (response.success) {
-                        localStorage.setItem('adminToken', response.token);
-                        localStorage.setItem('adminData', JSON.stringify({
+                        // Store session data with proper expiry and login state
+                        const sessionData = {
                             username: response.username,
                             avatar: response.avatar,
                             role: response.role,
-                            loginTime: new Date().toISOString()
-                        }));
+                            loginTime: new Date().toISOString(),
+                            expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+                        };
                         
-                        messageDiv.innerHTML = '<div class="alert alert-success">Login successful! Redirecting...</div>';
+                        localStorage.setItem('adminToken', response.token);
+                        localStorage.setItem('adminData', JSON.stringify(sessionData));
+                        localStorage.setItem('isLoggedIn', 'true');
+                        
+                        messageDiv.innerHTML = '<div class="alert alert-success">✅ Login successful! Redirecting to admin panel...</div>';
+                        
                         setTimeout(() => {
                             window.location.href = 'admin.html';
-                        }, 1000);
+                        }, 1500);
                     } else {
                         messageDiv.innerHTML = `<div class="alert alert-error">${response.message || 'Login failed'}</div>`;
                     }
