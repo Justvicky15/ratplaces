@@ -121,24 +121,41 @@ function sanitizeInput(input, maxLength = 500) {
 // Enhanced token validation for serverless
 function validateAuthToken(authHeader) {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('No valid auth header found');
     return null;
   }
   
   const token = authHeader.substring(7);
+  console.log('Validating token:', token.substring(0, 20) + '...');
   
-  // Simple validation - in production use proper JWT
+  // Simple validation - token should have format: username_timestamp_random_hash
   if (token && token.length > 15 && token.includes('_')) {
     const parts = token.split('_');
     if (parts.length >= 3) {
+      const username = parts[0];
       const timestamp = parseInt(parts[1]);
+      
+      // Check if timestamp is valid
+      if (isNaN(timestamp)) {
+        console.log('Invalid timestamp in token');
+        return null;
+      }
+      
       const age = Date.now() - timestamp;
+      console.log('Token age (hours):', age / (1000 * 60 * 60));
+      
       // Token valid for 24 hours
       if (age < 24 * 60 * 60 * 1000) {
-        return { valid: true, username: parts[0] };
+        console.log('Token validation successful for user:', username);
+        return { valid: true, username: username };
+      } else {
+        console.log('Token expired');
+        return null;
       }
     }
   }
   
+  console.log('Token validation failed');
   return null;
 }
 
@@ -175,6 +192,7 @@ function sendError(res, statusCode, message, details = null) {
   const errorResponse = {
     success: false,
     error: message,
+    message: message, // Also include message field for compatibility
     timestamp: new Date().toISOString()
   };
   
@@ -182,6 +200,7 @@ function sendError(res, statusCode, message, details = null) {
     errorResponse.details = details;
   }
   
+  console.log(`Sending error ${statusCode}:`, message);
   res.status(statusCode).json(errorResponse);
 }
 
@@ -197,6 +216,7 @@ function sendSuccess(res, data, message = 'Success', statusCode = 200) {
     response.data = data;
   }
   
+  console.log(`Sending success ${statusCode}:`, message);
   res.status(statusCode).json(response);
 }
 
@@ -287,6 +307,8 @@ async function handleAuth(req, res, method, requestId) {
     const body = await parseRequestBody(req);
     const { username, password } = body;
     
+    console.log(`[${requestId}] Auth attempt for user:`, username);
+    
     if (!username || !password) {
       console.log(`[${requestId}] Auth failed: Missing credentials`);
       return sendError(res, 400, 'Username and password are required');
@@ -336,28 +358,34 @@ async function handlePrograms(req, res, method, resourceId, requestId) {
       
     case 'POST':
       try {
+        console.log(`[${requestId}] Creating program - checking auth...`);
+        
         // Validate authentication
         const authResult = validateAuthToken(req.headers.authorization);
-        if (!authResult) {
-          console.log(`[${requestId}] Programs POST: Unauthorized`);
+        if (!authResult || !authResult.valid) {
+          console.log(`[${requestId}] Programs POST: Unauthorized - invalid token`);
           return sendError(res, 401, 'Authentication required');
         }
         
+        console.log(`[${requestId}] Auth validated for user: ${authResult.username}`);
+        
         const body = await parseRequestBody(req);
+        console.log(`[${requestId}] Received program data:`, Object.keys(body));
+        
         const { name, category, price, contactUsername, imageUrl, downloadUrl, description, customMessage } = body;
         
         // Enhanced validation
         const validationErrors = [];
-        if (!name?.trim()) validationErrors.push('Program name is required');
+        if (!name || !name.trim()) validationErrors.push('Program name is required');
         if (!category) validationErrors.push('Category is required');
-        if (price === undefined || price === null) validationErrors.push('Price is required');
-        if (!contactUsername?.trim()) validationErrors.push('Contact username is required');
-        if (!downloadUrl?.trim()) validationErrors.push('Download URL is required');
-        if (!description?.trim()) validationErrors.push('Description is required');
+        if (price === undefined || price === null || price === '') validationErrors.push('Price is required');
+        if (!contactUsername || !contactUsername.trim()) validationErrors.push('Contact username is required');
+        if (!downloadUrl || !downloadUrl.trim()) validationErrors.push('Download URL is required');
+        if (!description || !description.trim()) validationErrors.push('Description is required');
         
         if (validationErrors.length > 0) {
           console.log(`[${requestId}] Programs POST: Validation errors`, validationErrors);
-          return sendError(res, 400, 'Validation failed', validationErrors);
+          return sendError(res, 400, 'Validation failed: ' + validationErrors.join(', '));
         }
         
         // Create sanitized program
@@ -374,30 +402,34 @@ async function handlePrograms(req, res, method, resourceId, requestId) {
           customMessage: sanitizeInput(customMessage || '', 500),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          status: 'active'
+          status: 'active',
+          author: authResult.username
         };
+        
+        console.log(`[${requestId}] Creating program with ID: ${newProgram.id}`);
         
         // Save program
         const programs = secureFileRead(programsPath, []);
         programs.unshift(newProgram); // Add to beginning
         
         if (secureFileWrite(programsPath, programs)) {
-          console.log(`[${requestId}] Program created: ${newProgram.id}`);
+          console.log(`[${requestId}] Program created successfully: ${newProgram.id}`);
           return sendSuccess(res, newProgram, 'Program created successfully', 201);
         } else {
+          console.log(`[${requestId}] Failed to save program to file`);
           return sendError(res, 500, 'Failed to save program');
         }
         
       } catch (error) {
-        console.error(`[${requestId}] Error creating program:`, error.message);
-        return sendError(res, 400, 'Invalid request data');
+        console.error(`[${requestId}] Error creating program:`, error.message, error.stack);
+        return sendError(res, 400, 'Invalid request data: ' + error.message);
       }
       
     case 'DELETE':
       try {
         // Validate authentication
         const authResult = validateAuthToken(req.headers.authorization);
-        if (!authResult) {
+        if (!authResult || !authResult.valid) {
           return sendError(res, 401, 'Authentication required');
         }
         
@@ -447,11 +479,16 @@ async function handleAnnouncements(req, res, method, requestId) {
       
     case 'POST':
       try {
+        console.log(`[${requestId}] Creating announcement - checking auth...`);
+        
         // Validate authentication
         const authResult = validateAuthToken(req.headers.authorization);
-        if (!authResult) {
+        if (!authResult || !authResult.valid) {
+          console.log(`[${requestId}] Announcements POST: Unauthorized - invalid token`);
           return sendError(res, 401, 'Authentication required');
         }
+        
+        console.log(`[${requestId}] Auth validated for user: ${authResult.username}`);
         
         const body = await parseRequestBody(req);
         const { title, message, priority = 'normal' } = body;
@@ -489,20 +526,23 @@ async function handleAnnouncements(req, res, method, requestId) {
           createdAt: new Date().toISOString()
         };
         
+        console.log(`[${requestId}] Creating announcement with ID: ${newAnnouncement.id}`);
+        
         // Save announcement
         const announcements = secureFileRead(announcementsPath, []);
         announcements.unshift(newAnnouncement); // Add to beginning
         
         if (secureFileWrite(announcementsPath, announcements)) {
-          console.log(`[${requestId}] Announcement created: ${newAnnouncement.id}`);
+          console.log(`[${requestId}] Announcement created successfully: ${newAnnouncement.id}`);
           return sendSuccess(res, newAnnouncement, 'Announcement published successfully', 201);
         } else {
+          console.log(`[${requestId}] Failed to save announcement to file`);
           return sendError(res, 500, 'Failed to save announcement');
         }
         
       } catch (error) {
-        console.error(`[${requestId}] Error creating announcement:`, error.message);
-        return sendError(res, 400, 'Invalid request data');
+        console.error(`[${requestId}] Error creating announcement:`, error.message, error.stack);
+        return sendError(res, 400, 'Invalid request data: ' + error.message);
       }
       
     default:
@@ -518,7 +558,7 @@ async function handleAnalytics(req, res, method, requestId) {
   
   // Validate authentication
   const authResult = validateAuthToken(req.headers.authorization);
-  if (!authResult) {
+  if (!authResult || !authResult.valid) {
     return sendError(res, 401, 'Authentication required');
   }
   
