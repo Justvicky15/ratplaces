@@ -864,15 +864,28 @@
         // Navigation
         function showSection(sectionId) {
             document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-            document.querySelector(`[onclick="showSection('${sectionId}')"]`).classList.add('active');
+            const targetButton = document.querySelector(`[onclick="showSection('${sectionId}')"]`);
+            if (targetButton) {
+                targetButton.classList.add('active');
+            }
 
             document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-            document.getElementById(sectionId).classList.add('active');
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
 
-            if (sectionId === 'manage-programs') {
-                loadManagePrograms();
-            } else if (sectionId === 'announcements') {
-                loadRecentAnnouncements();
+            // Load data when switching sections
+            switch(sectionId) {
+                case 'dashboard':
+                    refreshDashboard();
+                    break;
+                case 'manage-programs':
+                    loadManagePrograms();
+                    break;
+                case 'announcements':
+                    loadRecentAnnouncements();
+                    break;
             }
         }
 
@@ -885,9 +898,11 @@
                     document.getElementById('programCount').textContent = programs.length;
                 }
 
-                // Load announcements count (simulated)
-                document.getElementById('announcementCount').textContent = '4';
-                document.getElementById('totalVisitors').textContent = '127';
+                // Load real announcements count
+                loadRecentAnnouncements();
+                
+                // Load analytics if available
+                loadAnalytics();
             } catch (error) {
                 console.error('Error loading dashboard stats:', error);
             }
@@ -970,7 +985,30 @@
         }
 
         function editProgram(programId) {
-            alert('Edit functionality will be implemented in a future update.');
+            // Find the program to edit
+            const programsResponse = apiRequest('/programs').then(response => {
+                const programs = Array.isArray(response) ? response : (response.data || []);
+                const program = programs.find(p => p.id === programId);
+                if (program) {
+                    // Pre-fill the add program form with existing data
+                    document.getElementById('programName').value = program.name;
+                    document.getElementById('programCategory').value = program.category;
+                    document.getElementById('programPrice').value = program.price;
+                    document.getElementById('contactUsername').value = program.contactUsername;
+                    document.getElementById('imageUrl').value = program.imageUrl || '';
+                    document.getElementById('downloadUrl').value = program.downloadUrl;
+                    document.getElementById('shortDescription').value = program.description;
+                    document.getElementById('customMessage').value = program.customMessage || '';
+                    
+                    // Switch to the add programs section
+                    showSection('programs');
+                    
+                    // Scroll to form
+                    document.getElementById('programForm').scrollIntoView({ behavior: 'smooth' });
+                    
+                    showMessage('programMessage', `Editing "${program.name}" - make your changes and submit to update`, 'success');
+                }
+            });
         }
 
         // Announcements Management
@@ -1234,6 +1272,33 @@
                 checkAuth();
             }
         });
+        
+        // Load analytics data
+        async function loadAnalytics() {
+            try {
+                const response = await apiRequest('/analytics', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+                
+                if (response && response.success !== false) {
+                    const data = response.data || response;
+                    if (data.visitors) {
+                        document.getElementById('totalVisitors').textContent = data.visitors.total || '0';
+                    }
+                }
+            } catch (error) {
+                document.getElementById('totalVisitors').textContent = '0';
+            }
+        }
+        
+        // Refresh data when switching to dashboard
+        function refreshDashboard() {
+            loadDashboardStats();
+            loadRecentAnnouncements();
+            loadAnalytics();
+        }
     </script>
 </body>
 </html>
