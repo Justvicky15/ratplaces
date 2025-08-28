@@ -835,7 +835,7 @@
                     ...options.headers
                 };
                 
-                if (token && (options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE')) {
+                if (token) {
                     headers['Authorization'] = `Bearer ${token}`;
                 }
                 
@@ -1015,9 +1015,7 @@
         async function loadRecentAnnouncements() {
             try {
                 const response = await apiRequest('/announcements', {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    }
+                    method: 'GET'
                 });
                 
                 if (response && response.success !== false) {
@@ -1288,9 +1286,7 @@
         async function loadAnalytics() {
             try {
                 const response = await apiRequest('/analytics', {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    }
+                    method: 'GET'
                 });
                 
                 if (response && response.success !== false) {
