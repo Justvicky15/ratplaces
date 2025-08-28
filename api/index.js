@@ -434,38 +434,18 @@ async function handlePrograms(req, res, method, resourceId, requestId) {
 
 // Announcements endpoint
 async function handleAnnouncements(req, res, method, requestId) {
+  const announcementsPath = path.join(__dirname, 'announcements.json');
+  
   switch (method) {
     case 'GET':
-      // Return sample announcements
-      const sampleAnnouncements = [
-        {
-          id: 'ann_welcome',
-          title: 'Welcome to RatPlace!',
-          message: 'Your premier marketplace for security tools and software solutions. Browse our catalog and find what you need!',
-          author: 'RatPlace Team',
-          priority: 'high',
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 'ann_security',
-          title: 'Security & Quality Guarantee',
-          message: 'All tools on RatPlace are carefully reviewed. Contact sellers directly for support and custom requests.',
-          author: 'Security Team',
-          priority: 'normal',
-          createdAt: new Date(Date.now() - 3600000).toISOString()
-        },
-        {
-          id: 'ann_updates',
-          title: 'Regular Updates',
-          message: 'We continuously add new tools and features. Check back regularly for the latest additions to our marketplace.',
-          author: 'Development Team',
-          priority: 'normal',
-          createdAt: new Date(Date.now() - 86400000).toISOString()
-        }
-      ];
-      
-      console.log(`[${requestId}] Retrieved ${sampleAnnouncements.length} announcements`);
-      return sendSuccess(res, sampleAnnouncements, 'Announcements loaded successfully');
+      try {
+        const announcements = secureFileRead(announcementsPath, []);
+        console.log(`[${requestId}] Retrieved ${announcements.length} announcements`);
+        return sendSuccess(res, announcements, 'Announcements loaded successfully');
+      } catch (error) {
+        console.error(`[${requestId}] Error loading announcements:`, error.message);
+        return sendError(res, 500, 'Failed to load announcements');
+      }
       
     case 'POST':
       try {
@@ -476,23 +456,51 @@ async function handleAnnouncements(req, res, method, requestId) {
         }
         
         const body = await parseRequestBody(req);
-        const { title, message, priority, author } = body;
+        const { title, message, priority = 'normal' } = body;
         
-        if (!title?.trim() || !message?.trim()) {
+        // Validation
+        if (!title || !message) {
           return sendError(res, 400, 'Title and message are required');
         }
         
+        if (title.length > 200) {
+          return sendError(res, 400, 'Title must be 200 characters or less');
+        }
+        
+        if (message.length > 1000) {
+          return sendError(res, 400, 'Message must be 1000 characters or less');
+        }
+        
+        if (!['low', 'normal', 'high'].includes(priority)) {
+          return sendError(res, 400, 'Priority must be low, normal, or high');
+        }
+        
+        // Get user data from logins
+        const logins = secureFileRead(path.join(__dirname, 'logins.json'), []);
+        const userData = logins.find(u => u.username === authResult.username);
+        
+        // Create new announcement
         const newAnnouncement = {
           id: `ann_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-          title: sanitizeInput(title, 100),
+          title: sanitizeInput(title, 200),
           message: sanitizeInput(message, 1000),
-          author: sanitizeInput(author || 'Admin', 50),
-          priority: priority === 'high' ? 'high' : 'normal',
+          priority: priority,
+          author: authResult.username,
+          authorAvatar: userData ? userData.avatar : '📢',
+          authorAvatarUrl: userData ? userData.avatarUrl : null,
           createdAt: new Date().toISOString()
         };
         
-        console.log(`[${requestId}] Announcement created: ${newAnnouncement.id}`);
-        return sendSuccess(res, newAnnouncement, 'Announcement created successfully', 201);
+        // Save announcement
+        const announcements = secureFileRead(announcementsPath, []);
+        announcements.unshift(newAnnouncement); // Add to beginning
+        
+        if (secureFileWrite(announcementsPath, announcements)) {
+          console.log(`[${requestId}] Announcement created: ${newAnnouncement.id}`);
+          return sendSuccess(res, newAnnouncement, 'Announcement published successfully', 201);
+        } else {
+          return sendError(res, 500, 'Failed to save announcement');
+        }
         
       } catch (error) {
         console.error(`[${requestId}] Error creating announcement:`, error.message);
