@@ -896,26 +896,21 @@
         // Announcements Management
         async function loadRecentAnnouncements() {
             try {
-                // For now, show sample announcements since announcements endpoint might not exist
-                const sampleAnnouncements = [
-                    {
-                        id: 'sample1',
-                        title: 'Welcome to RatPlace!',
-                        message: 'Your premier marketplace for security tools and software solutions.',
-                        author: 'RatPlace Team',
-                        createdAt: new Date().toISOString(),
-                        priority: 'high'
-                    },
-                    {
-                        id: 'sample2',
-                        title: 'Quality Guarantee',
-                        message: 'All tools on RatPlace are tested and verified.',
-                        author: 'Quality Team',
-                        createdAt: new Date(Date.now() - 86400000).toISOString(),
-                        priority: 'normal'
+                const response = await apiRequest('/announcements', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
                     }
-                ];
-                displayRecentAnnouncements(sampleAnnouncements);
+                });
+                
+                if (response && response.success !== false) {
+                    const announcements = Array.isArray(response) ? response : (response.data || []);
+                    displayRecentAnnouncements(announcements);
+                    
+                    // Update dashboard count
+                    document.getElementById('announcementCount').textContent = announcements.length;
+                } else {
+                    displayRecentAnnouncements([]);
+                }
             } catch (error) {
                 showError('recentAnnouncements', 'Failed to load announcements');
             }
@@ -936,7 +931,10 @@
                     </div>
                     <div style="color: var(--muted); line-height: 1.6; font-size: 0.875rem;">${escapeHtml(announcement.message)}</div>
                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; font-size: 0.75rem; color: var(--muted);">
-                        <span>📝</span>
+                        ${announcement.authorAvatarUrl ? 
+                            `<img src="${announcement.authorAvatarUrl}" alt="${escapeHtml(announcement.author)}" style="width: 20px; height: 20px; border-radius: 50%;">` : 
+                            `<span>${announcement.authorAvatar || '📝'}</span>`
+                        }
                         <span>${escapeHtml(announcement.author || 'Admin')}</span>
                     </div>
                 </div>
@@ -987,15 +985,25 @@
                 const formData = {
                     title: document.getElementById('announcementTitle').value,
                     message: document.getElementById('announcementMessageText').value,
-                    priority: document.getElementById('announcementPriority').value,
-                    author: document.getElementById('announcementAuthor').value || 'Admin'
+                    priority: document.getElementById('announcementPriority').value
                 };
 
                 try {
-                    // For now, just show success message since announcements endpoint might not be implemented
-                    showMessage('announcementMessage', 'Announcement would be published (endpoint needs implementation)', 'success');
-                    document.getElementById('announcementForm').reset();
-                    loadRecentAnnouncements();
+                    const response = await apiRequest('/announcements', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    if (response.success) {
+                        showMessage('announcementMessage', 'Announcement published successfully!', 'success');
+                        document.getElementById('announcementForm').reset();
+                        loadRecentAnnouncements();
+                    } else {
+                        showMessage('announcementMessage', response.message || 'Failed to publish announcement', 'error');
+                    }
                 } catch (error) {
                     showMessage('announcementMessage', 'Failed to publish announcement', 'error');
                 }
