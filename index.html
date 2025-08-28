@@ -1090,29 +1090,22 @@
         // Check login state and update UI
         function checkLoginState() {
             const token = localStorage.getItem('adminToken');
-            const adminData = localStorage.getItem('adminData');
+            const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
             
-            if (token && adminData) {
-                try {
-                    const data = JSON.parse(adminData);
-                    const loginTime = new Date(data.loginTime);
-                    const now = new Date();
-                    const hoursSinceLogin = (now - loginTime) / (1000 * 60 * 60);
-                    
-                    // Check if still valid (less than 24 hours)
-                    if (hoursSinceLogin < 24) {
-                        // Already logged in, go to admin
-                        window.location.href = 'admin.html';
-                        return;
-                    } else {
-                        // Session expired, clear data
-                        localStorage.removeItem('adminToken');
-                        localStorage.removeItem('adminData');
-                    }
-                } catch {
-                    // Invalid data, clear it
+            if (isLoggedIn && token && adminData.username) {
+                // Check if session is still valid
+                const expiresAt = adminData.expiresAt || (new Date(adminData.loginTime).getTime() + (24 * 60 * 60 * 1000));
+                
+                if (Date.now() < expiresAt) {
+                    // Still valid, go to admin
+                    window.location.href = 'admin.html';
+                    return;
+                } else {
+                    // Session expired, clear data
                     localStorage.removeItem('adminToken');
                     localStorage.removeItem('adminData');
+                    localStorage.removeItem('isLoggedIn');
                 }
             }
             
@@ -1133,37 +1126,44 @@
         // Update UI based on login state
         function updateNavigation() {
             const token = localStorage.getItem('adminToken');
-            const adminData = localStorage.getItem('adminData');
+            const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
             const loginBtn = document.getElementById('loginBtn');
             const adminBtn = document.getElementById('adminBtn');
             
-            if (token && adminData) {
-                try {
-                    const data = JSON.parse(adminData);
-                    const loginTime = new Date(data.loginTime);
-                    const now = new Date();
-                    const hoursSinceLogin = (now - loginTime) / (1000 * 60 * 60);
-                    
-                    if (hoursSinceLogin < 24) {
-                        loginBtn.textContent = `Welcome, ${data.username}`;
-                        loginBtn.onclick = () => {
-                            if (confirm('You are already logged in. Go to admin panel?')) {
-                                window.location.href = 'admin.html';
-                            }
-                        };
-                        adminBtn.textContent = 'Go to Admin';
-                        return;
-                    }
-                } catch {}
-                // Clear invalid data
+            if (isLoggedIn && token && adminData.username) {
+                // Check session validity
+                const expiresAt = adminData.expiresAt || (new Date(adminData.loginTime).getTime() + (24 * 60 * 60 * 1000));
+                
+                if (Date.now() < expiresAt) {
+                    // User is logged in and session is valid
+                    loginBtn.textContent = `Welcome, ${adminData.username}`;
+                    loginBtn.onclick = () => {
+                        if (confirm('Do you want to logout?')) {
+                            localStorage.removeItem('adminToken');
+                            localStorage.removeItem('adminData');
+                            localStorage.removeItem('isLoggedIn');
+                            updateNavigation();
+                        }
+                    };
+                    adminBtn.textContent = 'Go to Admin Panel';
+                    adminBtn.onclick = () => {
+                        window.location.href = 'admin.html';
+                    };
+                    return;
+                }
+                
+                // Session expired, clear data
                 localStorage.removeItem('adminToken');
                 localStorage.removeItem('adminData');
+                localStorage.removeItem('isLoggedIn');
             }
             
             // Default state - not logged in
             loginBtn.textContent = 'Sign In';
-            loginBtn.onclick = checkLoginState;
+            loginBtn.onclick = () => showLoginModal();
             adminBtn.textContent = 'Admin Panel';
+            adminBtn.onclick = () => showLoginModal();
         }
 
         // Close modal on escape key
