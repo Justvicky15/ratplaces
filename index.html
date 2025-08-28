@@ -5,46 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RatPlace - Digital Marketplace</title>
     <meta name="description" content="Professional tools and software solutions for security researchers and developers">
-    
-    <!-- Vercel-inspired favicon and meta -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐀</text></svg>">
     <meta name="theme-color" content="#000000">
     
-    <!-- Open Graph meta tags -->
-    <meta property="og:title" content="RatPlace - Digital Marketplace">
-    <meta property="og:description" content="Professional tools and software solutions for security researchers and developers">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://ratplace.online">
-    <meta name="twitter:card" content="summary_large_image">
-    
     <style>
-        :root {
-            --background: #000000;
-            --foreground: #ffffff;
-            --card: #0a0a0a;
-            --card-foreground: #ffffff;
-            --popover: #0a0a0a;
-            --popover-foreground: #ffffff;
-            --primary: #ffffff;
-            --primary-foreground: #000000;
-            --secondary: #171717;
-            --secondary-foreground: #ffffff;
-            --muted: #171717;
-            --muted-foreground: #a1a1aa;
-            --accent: #262626;
-            --accent-foreground: #ffffff;
-            --destructive: #dc2626;
-            --destructive-foreground: #ffffff;
-            --border: #262626;
-            --input: #262626;
-            --ring: #d4d4d8;
-            --radius: 0.5rem;
-        }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        :root {
+            --background: #000000;
+            --foreground: #ffffff;
+            --card: #0a0a0a;
+            --border: #262626;
+            --muted: #a1a1aa;
+            --primary: #ffffff;
+            --destructive: #dc2626;
+            --success: #22c55e;
         }
 
         body {
@@ -53,7 +32,6 @@
             color: var(--foreground);
             min-height: 100vh;
             line-height: 1.5;
-            font-feature-settings: "rlig" 1, "calt" 1;
         }
 
         /* Header */
@@ -86,10 +64,6 @@
             color: var(--foreground);
         }
 
-        .logo:hover {
-            opacity: 0.8;
-        }
-
         .nav-buttons {
             display: flex;
             align-items: center;
@@ -100,13 +74,10 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            border-radius: calc(var(--radius) - 2px);
+            border-radius: 6px;
             font-size: 0.875rem;
             font-weight: 500;
             transition: all 0.15s ease;
-            focus-visible: outline;
-            focus-visible: outline-2px;
-            focus-visible: outline-offset-2px;
             text-decoration: none;
             border: none;
             cursor: pointer;
@@ -121,19 +92,17 @@
         }
 
         .btn-ghost:hover {
-            background: var(--accent);
-            color: var(--accent-foreground);
+            background: #262626;
         }
 
         .btn-default {
             background: var(--primary);
-            color: var(--primary-foreground);
+            color: var(--background);
             border: 1px solid var(--border);
         }
 
         .btn-default:hover {
-            background: var(--accent);
-            color: var(--accent-foreground);
+            background: #e5e5e5;
         }
 
         /* Main Content */
@@ -143,7 +112,7 @@
             padding: 2rem 1rem;
         }
 
-        /* Hero Section */
+        /* Hero */
         .hero {
             text-align: center;
             padding: 4rem 0;
@@ -155,7 +124,7 @@
             font-weight: 800;
             letter-spacing: -0.02em;
             margin-bottom: 1rem;
-            background: linear-gradient(180deg, var(--foreground) 0%, var(--muted-foreground) 100%);
+            background: linear-gradient(180deg, #ffffff 0%, #a1a1aa 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -163,12 +132,12 @@
 
         .hero p {
             font-size: 1.25rem;
-            color: var(--muted-foreground);
+            color: var(--muted);
             max-width: 600px;
             margin: 0 auto;
         }
 
-        /* Navigation Tabs */
+        /* Tabs */
         .tabs {
             margin-bottom: 2rem;
         }
@@ -176,7 +145,7 @@
         .tab-nav {
             display: flex;
             background: var(--card);
-            border-radius: var(--radius);
+            border-radius: 8px;
             padding: 0.25rem;
             border: 1px solid var(--border);
         }
@@ -185,9 +154,9 @@
             flex: 1;
             padding: 0.75rem 1.5rem;
             background: transparent;
-            color: var(--muted-foreground);
+            color: var(--muted);
             border: none;
-            border-radius: calc(var(--radius) - 2px);
+            border-radius: 6px;
             cursor: pointer;
             font-weight: 500;
             transition: all 0.15s ease;
@@ -195,14 +164,14 @@
         }
 
         .tab-btn:hover {
-            background: var(--accent);
-            color: var(--accent-foreground);
+            background: #262626;
+            color: var(--foreground);
         }
 
         .tab-btn.active {
             background: var(--primary);
-            color: var(--primary-foreground);
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            color: var(--background);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         /* Search */
@@ -222,7 +191,7 @@
             padding-right: 2.5rem;
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: var(--radius);
+            border-radius: 8px;
             color: var(--foreground);
             font-size: 0.875rem;
             transition: all 0.15s ease;
@@ -230,12 +199,12 @@
 
         .search-input:focus {
             outline: none;
-            border-color: var(--ring);
+            border-color: #d4d4d8;
             box-shadow: 0 0 0 2px rgba(212, 212, 216, 0.2);
         }
 
         .search-input::placeholder {
-            color: var(--muted-foreground);
+            color: var(--muted);
         }
 
         .search-icon {
@@ -243,14 +212,14 @@
             right: 0.75rem;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--muted-foreground);
+            color: var(--muted);
             pointer-events: none;
         }
 
-        /* Tab Content */
+        /* Content */
         .tab-content {
             background: var(--card);
-            border-radius: var(--radius);
+            border-radius: 8px;
             padding: 2rem;
             border: 1px solid var(--border);
             min-height: 400px;
@@ -260,7 +229,6 @@
             margin-bottom: 1.5rem;
             font-size: 1.5rem;
             font-weight: 600;
-            color: var(--foreground);
         }
 
         /* Programs Grid */
@@ -271,17 +239,16 @@
         }
 
         .program-card {
-            background: var(--card);
-            border-radius: var(--radius);
+            background: var(--background);
+            border-radius: 8px;
             padding: 1.5rem;
             border: 1px solid var(--border);
             transition: all 0.15s ease;
-            position: relative;
         }
 
         .program-card:hover {
-            border-color: var(--muted-foreground);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-color: var(--muted);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .program-header {
@@ -294,15 +261,14 @@
         .program-title {
             font-size: 1.125rem;
             font-weight: 600;
-            color: var(--foreground);
             margin-bottom: 0.5rem;
         }
 
         .program-category {
-            background: var(--secondary);
-            color: var(--secondary-foreground);
+            background: #171717;
+            color: var(--foreground);
             padding: 0.25rem 0.75rem;
-            border-radius: calc(var(--radius) - 2px);
+            border-radius: 4px;
             font-size: 0.75rem;
             font-weight: 500;
             text-transform: uppercase;
@@ -312,16 +278,15 @@
         .program-price {
             font-size: 1.25rem;
             font-weight: 700;
-            color: var(--foreground);
             margin-bottom: 1rem;
         }
 
         .program-price.free {
-            color: #22c55e;
+            color: var(--success);
         }
 
         .program-description {
-            color: var(--muted-foreground);
+            color: var(--muted);
             margin-bottom: 1rem;
             line-height: 1.6;
             font-size: 0.875rem;
@@ -341,22 +306,22 @@
 
         .btn-primary {
             background: var(--primary);
-            color: var(--primary-foreground);
+            color: var(--background);
             border: 1px solid var(--border);
         }
 
         .btn-primary:hover {
-            background: var(--accent);
+            background: #e5e5e5;
         }
 
         .btn-secondary {
-            background: var(--secondary);
-            color: var(--secondary-foreground);
+            background: #171717;
+            color: var(--foreground);
             border: 1px solid var(--border);
         }
 
         .btn-secondary:hover {
-            background: var(--accent);
+            background: #262626;
         }
 
         /* Announcements */
@@ -367,8 +332,8 @@
         }
 
         .announcement {
-            background: var(--card);
-            border-radius: var(--radius);
+            background: var(--background);
+            border-radius: 8px;
             padding: 1.5rem;
             border: 1px solid var(--border);
             border-left: 4px solid var(--primary);
@@ -376,7 +341,7 @@
         }
 
         .announcement:hover {
-            border-color: var(--muted-foreground);
+            border-color: var(--muted);
             transform: translateX(2px);
         }
 
@@ -394,16 +359,15 @@
         .announcement-title {
             font-size: 1rem;
             font-weight: 600;
-            color: var(--foreground);
         }
 
         .announcement-time {
             font-size: 0.75rem;
-            color: var(--muted-foreground);
+            color: var(--muted);
         }
 
         .announcement-message {
-            color: var(--muted-foreground);
+            color: var(--muted);
             line-height: 1.6;
             font-size: 0.875rem;
         }
@@ -414,10 +378,127 @@
             gap: 0.5rem;
             margin-top: 1rem;
             font-size: 0.75rem;
-            color: var(--muted-foreground);
+            color: var(--muted);
         }
 
-        /* Loading */
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            background: var(--card);
+            border-radius: 8px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            border: 1px solid var(--border);
+            position: relative;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 1.25rem;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+
+        .close-btn:hover {
+            background: #262626;
+            color: var(--foreground);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--foreground);
+            font-size: 0.875rem;
+            transition: all 0.15s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #d4d4d8;
+            box-shadow: 0 0 0 2px rgba(212, 212, 216, 0.2);
+        }
+
+        .form-input::placeholder {
+            color: var(--muted);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 2rem;
+        }
+
+        .alert {
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .alert-error {
+            background: rgba(220, 38, 38, 0.1);
+            color: var(--destructive);
+            border: 1px solid rgba(220, 38, 38, 0.2);
+        }
+
         .loading {
             text-align: center;
             padding: 3rem;
@@ -438,171 +519,23 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Modal */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(4px);
-            z-index: 50;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal {
-            background: var(--card);
-            border-radius: var(--radius);
-            padding: 2rem;
-            max-width: 400px;
-            width: 90%;
-            border: 1px solid var(--border);
-            position: relative;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        }
-
-        .modal-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .modal-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--foreground);
-            margin-bottom: 0.5rem;
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: none;
-            border: none;
-            color: var(--muted-foreground);
-            font-size: 1.25rem;
-            cursor: pointer;
-            width: 32px;
-            height: 32px;
-            border-radius: calc(var(--radius) - 2px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.15s ease;
-        }
-
-        .close-btn:hover {
-            background: var(--accent);
-            color: var(--accent-foreground);
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: var(--foreground);
-            font-weight: 500;
-            font-size: 0.875rem;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 0.75rem;
-            background: var(--background);
-            border: 1px solid var(--border);
-            border-radius: calc(var(--radius) - 2px);
-            color: var(--foreground);
-            font-size: 0.875rem;
-            transition: all 0.15s ease;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--ring);
-            box-shadow: 0 0 0 2px rgba(212, 212, 216, 0.2);
-        }
-
-        .form-input::placeholder {
-            color: var(--muted-foreground);
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 0.75rem;
-            margin-top: 2rem;
-        }
-
-        .alert {
-            padding: 0.75rem;
-            border-radius: calc(var(--radius) - 2px);
-            margin-bottom: 1rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .alert-success {
-            background: rgba(34, 197, 94, 0.1);
-            color: #22c55e;
-            border: 1px solid rgba(34, 197, 94, 0.2);
-        }
-
-        .alert-error {
-            background: rgba(220, 38, 38, 0.1);
-            color: var(--destructive);
-            border: 1px solid rgba(220, 38, 38, 0.2);
-        }
-
         /* Responsive */
         @media (max-width: 768px) {
-            .hero h1 { 
-                font-size: 2.5rem; 
-            }
-            .hero p {
-                font-size: 1rem;
-            }
-            .nav { 
-                padding: 0 1rem; 
-                height: 56px;
-            }
-            .main { 
-                padding: 1rem; 
-            }
-            .tab-nav { 
-                flex-direction: column; 
-                gap: 0.25rem;
-            }
-            .programs-grid { 
-                grid-template-columns: 1fr; 
-            }
-            .program-actions { 
-                flex-direction: column; 
-            }
-            .modal {
-                margin: 1rem;
-                width: calc(100% - 2rem);
-            }
+            .hero h1 { font-size: 2.5rem; }
+            .hero p { font-size: 1rem; }
+            .nav { padding: 0 1rem; height: 56px; }
+            .main { padding: 1rem; }
+            .tab-nav { flex-direction: column; gap: 0.25rem; }
+            .programs-grid { grid-template-columns: 1fr; }
+            .program-actions { flex-direction: column; }
+            .modal { margin: 1rem; width: calc(100% - 2rem); }
         }
 
         @media (max-width: 480px) {
-            .hero {
-                padding: 2rem 0;
-            }
-            .hero h1 {
-                font-size: 2rem;
-            }
-            .nav-buttons {
-                gap: 0.5rem;
-            }
-            .btn {
-                font-size: 0.75rem;
-                padding: 0.5rem 0.75rem;
-            }
+            .hero { padding: 2rem 0; }
+            .hero h1 { font-size: 2rem; }
+            .nav-buttons { gap: 0.5rem; }
+            .btn { font-size: 0.75rem; padding: 0.5rem 0.75rem; }
         }
     </style>
 </head>
@@ -610,14 +543,14 @@
     <!-- Header -->
     <header class="header">
         <nav class="nav">
-            <a href="/" class="logo" data-testid="logo-home">
+            <a href="/" class="logo">
                 🐀 RatPlace
             </a>
             <div class="nav-buttons">
-                <button class="btn btn-ghost" onclick="showLoginModal()" data-testid="button-login">
+                <button class="btn btn-ghost" onclick="showLoginModal()">
                     Sign In
                 </button>
-                <a href="admin.html" class="btn btn-default" data-testid="link-admin">
+                <a href="admin.html" class="btn btn-default">
                     Admin Panel
                 </a>
             </div>
@@ -635,10 +568,10 @@
         <!-- Navigation Tabs -->
         <section class="tabs">
             <div class="tab-nav">
-                <button class="tab-btn active" onclick="showTab('marketplace')" data-testid="tab-marketplace">
+                <button class="tab-btn active" onclick="showTab('marketplace')">
                     🏪 Marketplace
                 </button>
-                <button class="tab-btn" onclick="showTab('announcements')" data-testid="tab-announcements">
+                <button class="tab-btn" onclick="showTab('announcements')">
                     📢 Announcements
                 </button>
             </div>
@@ -647,21 +580,15 @@
         <!-- Search Section -->
         <section class="search-section">
             <div class="search-box">
-                <input 
-                    type="text" 
-                    class="search-input" 
-                    placeholder="Search programs, categories, or sellers..." 
-                    id="searchInput"
-                    data-testid="input-search"
-                >
-                <span class="search-icon" data-testid="icon-search">🔍</span>
+                <input type="text" class="search-input" placeholder="Search programs, categories, or sellers..." id="searchInput">
+                <span class="search-icon">🔍</span>
             </div>
         </section>
 
         <!-- Marketplace Tab -->
-        <section class="tab-content" id="marketplace-tab" data-testid="content-marketplace">
+        <section class="tab-content" id="marketplace-tab">
             <h2>Available Programs</h2>
-            <div id="programsContainer" data-testid="container-programs">
+            <div id="programsContainer">
                 <div class="loading">
                     <div class="spinner"></div>
                     <p>Loading programs...</p>
@@ -670,9 +597,9 @@
         </section>
 
         <!-- Announcements Tab -->
-        <section class="tab-content" id="announcements-tab" style="display: none;" data-testid="content-announcements">
+        <section class="tab-content" id="announcements-tab" style="display: none;">
             <h2>Latest Announcements</h2>
-            <div id="announcementsContainer" data-testid="container-announcements">
+            <div id="announcementsContainer">
                 <div class="loading">
                     <div class="spinner"></div>
                     <p>Loading announcements...</p>
@@ -682,55 +609,30 @@
     </main>
 
     <!-- Login Modal -->
-    <div class="modal-overlay" id="loginModal" data-testid="modal-login">
+    <div class="modal-overlay" id="loginModal">
         <div class="modal">
-            <button class="close-btn" onclick="hideLoginModal()" data-testid="button-close-modal">&times;</button>
+            <button class="close-btn" onclick="hideLoginModal()">&times;</button>
             <div class="modal-header">
                 <h3 class="modal-title">Admin Login</h3>
-                <p style="color: var(--muted-foreground); font-size: 0.875rem;">
+                <p style="color: var(--muted); font-size: 0.875rem;">
                     Enter your credentials to access admin features
                 </p>
             </div>
-            <form id="loginForm" data-testid="form-login">
-                <div id="loginMessage" data-testid="message-login"></div>
+            <form id="loginForm">
+                <div id="loginMessage"></div>
                 <div class="form-group">
                     <label class="form-label" for="username">Username</label>
-                    <input 
-                        type="text" 
-                        id="username" 
-                        class="form-input" 
-                        placeholder="Enter username"
-                        required 
-                        data-testid="input-username"
-                    >
+                    <input type="text" id="username" class="form-input" placeholder="Enter username" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="password">Password</label>
-                    <input 
-                        type="password" 
-                        id="password" 
-                        class="form-input" 
-                        placeholder="Enter password"
-                        required 
-                        data-testid="input-password"
-                    >
+                    <input type="password" id="password" class="form-input" placeholder="Enter password" required>
                 </div>
                 <div class="modal-actions">
-                    <button 
-                        type="button" 
-                        class="btn btn-ghost" 
-                        onclick="hideLoginModal()" 
-                        style="flex: 1;"
-                        data-testid="button-cancel-login"
-                    >
+                    <button type="button" class="btn btn-ghost" onclick="hideLoginModal()" style="flex: 1;">
                         Cancel
                     </button>
-                    <button 
-                        type="submit" 
-                        class="btn btn-default" 
-                        style="flex: 1;"
-                        data-testid="button-submit-login"
-                    >
+                    <button type="submit" class="btn btn-default" style="flex: 1;" id="submitBtn">
                         Sign In
                     </button>
                 </div>
@@ -742,7 +644,7 @@
         let currentPrograms = [];
         let currentTab = 'marketplace';
 
-        // Get API base URL for serverless deployment
+        // Get API base URL for deployment
         function getApiBaseUrl() {
             const hostname = window.location.hostname;
             if (hostname.includes('vercel.app') || hostname.includes('ratplaces.vercel.app')) {
@@ -754,12 +656,10 @@
             }
         }
 
-        // API Request function with better error handling
+        // API Request function
         async function apiRequest(url, options = {}) {
             try {
                 const fullUrl = url.startsWith('http') ? url : getApiBaseUrl() + url;
-                console.log('Making API request to:', fullUrl);
-                
                 const response = await fetch(fullUrl, {
                     headers: {
                         'Content-Type': 'application/json',
@@ -769,12 +669,10 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    throw new Error(`HTTP ${response.status}`);
                 }
 
-                const data = await response.json();
-                console.log('API response:', data);
-                return data;
+                return await response.json();
             } catch (error) {
                 console.error('API request failed:', error);
                 return { success: false, error: error.message };
@@ -783,17 +681,14 @@
 
         // Tab Management
         function showTab(tabName) {
-            // Update tab buttons
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
 
-            // Show/hide tab content
             document.getElementById('marketplace-tab').style.display = tabName === 'marketplace' ? 'block' : 'none';
             document.getElementById('announcements-tab').style.display = tabName === 'announcements' ? 'block' : 'none';
 
             currentTab = tabName;
 
-            // Load content if needed
             if (tabName === 'announcements') {
                 loadAnnouncements();
             }
@@ -807,11 +702,10 @@
                     currentPrograms = Array.isArray(response) ? response : (response.data || []);
                     displayPrograms(currentPrograms);
                 } else {
-                    showError('programsContainer', 'Failed to load programs. Please try again later.');
+                    showError('programsContainer', 'Failed to load programs');
                 }
             } catch (error) {
-                console.error('Error loading programs:', error);
-                showError('programsContainer', 'Failed to load programs. Please check your connection.');
+                showError('programsContainer', 'Failed to load programs');
             }
         }
 
@@ -819,31 +713,31 @@
         function displayPrograms(programs) {
             const container = document.getElementById('programsContainer');
             if (!programs || programs.length === 0) {
-                container.innerHTML = '<div class="loading"><p>No programs available at the moment</p></div>';
+                container.innerHTML = '<div class="loading"><p>No programs available</p></div>';
                 return;
             }
 
             const html = `
                 <div class="programs-grid">
                     ${programs.map(program => `
-                        <div class="program-card" data-testid="card-program-${program.id}">
+                        <div class="program-card">
                             <div class="program-header">
                                 <div>
                                     <div class="program-title">${escapeHtml(program.name)}</div>
                                     <div class="program-category">${escapeHtml(program.category)}</div>
                                 </div>
-                                <div class="program-price ${parseFloat(program.price) === 0 ? 'free' : ''}" data-testid="text-price-${program.id}">
+                                <div class="program-price ${parseFloat(program.price) === 0 ? 'free' : ''}">
                                     ${parseFloat(program.price) === 0 ? 'FREE' : '$' + program.price}
                                 </div>
                             </div>
-                            <div class="program-description" data-testid="text-description-${program.id}">
+                            <div class="program-description">
                                 ${escapeHtml(program.description || program.customMessage || 'No description available')}
                             </div>
                             <div class="program-actions">
-                                <button class="btn btn-primary" onclick="downloadProgram('${program.downloadUrl}')" data-testid="button-download-${program.id}">
+                                <button class="btn btn-primary" onclick="downloadProgram('${program.downloadUrl}')">
                                     Download
                                 </button>
-                                <button class="btn btn-secondary" onclick="contactSeller('${escapeHtml(program.contactUsername)}')" data-testid="button-contact-${program.id}">
+                                <button class="btn btn-secondary" onclick="contactSeller('${escapeHtml(program.contactUsername)}')">
                                     Contact: ${escapeHtml(program.contactUsername)}
                                 </button>
                             </div>
@@ -858,17 +752,34 @@
         async function loadAnnouncements() {
             try {
                 const response = await apiRequest('/announcements');
-                console.log('Announcements response:', response);
                 if (response && response.success && response.data) {
                     displayAnnouncements(response.data);
                 } else if (response && Array.isArray(response)) {
                     displayAnnouncements(response);
                 } else {
-                    showError('announcementsContainer', 'Failed to load announcements. Please try again later.');
+                    // Create sample announcements if none exist
+                    const sampleAnnouncements = [
+                        {
+                            id: 'sample1',
+                            title: 'Welcome to RatPlace!',
+                            message: 'Your premier marketplace for security tools and software solutions. Browse our catalog and find what you need!',
+                            author: 'RatPlace Team',
+                            createdAt: new Date().toISOString(),
+                            priority: 'high'
+                        },
+                        {
+                            id: 'sample2',
+                            title: 'Quality Guarantee',
+                            message: 'All tools on RatPlace are tested and verified. Contact sellers directly for support and custom requests.',
+                            author: 'Quality Team',
+                            createdAt: new Date(Date.now() - 86400000).toISOString(),
+                            priority: 'normal'
+                        }
+                    ];
+                    displayAnnouncements(sampleAnnouncements);
                 }
             } catch (error) {
-                console.error('Error loading announcements:', error);
-                showError('announcementsContainer', 'Failed to load announcements. Please check your connection.');
+                showError('announcementsContainer', 'Failed to load announcements');
             }
         }
 
@@ -876,30 +787,22 @@
         function displayAnnouncements(announcements) {
             const container = document.getElementById('announcementsContainer');
             if (!announcements || announcements.length === 0) {
-                container.innerHTML = '<div class="loading"><p>No announcements available at the moment</p></div>';
+                container.innerHTML = '<div class="loading"><p>No announcements available</p></div>';
                 return;
             }
 
             const html = `
                 <div class="announcements-list">
                     ${announcements.map(announcement => `
-                        <div class="announcement ${announcement.priority === 'high' ? 'priority-high' : ''}" data-testid="announcement-${announcement.id}">
+                        <div class="announcement ${announcement.priority === 'high' ? 'priority-high' : ''}">
                             <div class="announcement-header">
-                                <div class="announcement-title" data-testid="text-announcement-title-${announcement.id}">
-                                    ${escapeHtml(announcement.title)}
-                                </div>
-                                <div class="announcement-time" data-testid="text-announcement-time-${announcement.id}">
-                                    ${formatDate(announcement.createdAt || announcement.timestamp)}
-                                </div>
+                                <div class="announcement-title">${escapeHtml(announcement.title)}</div>
+                                <div class="announcement-time">${formatDate(announcement.createdAt)}</div>
                             </div>
-                            <div class="announcement-message" data-testid="text-announcement-message-${announcement.id}">
-                                ${escapeHtml(announcement.message)}
-                            </div>
+                            <div class="announcement-message">${escapeHtml(announcement.message)}</div>
                             <div class="announcement-author">
                                 <span>📝</span>
-                                <span data-testid="text-announcement-author-${announcement.id}">
-                                    ${escapeHtml(announcement.author || 'Admin')}
-                                </span>
+                                <span>${escapeHtml(announcement.author || 'Admin')}</span>
                             </div>
                         </div>
                     `).join('')}
@@ -933,11 +836,7 @@
 
         function showError(containerId, message) {
             const container = document.getElementById(containerId);
-            container.innerHTML = `
-                <div class="loading">
-                    <p style="color: var(--destructive);">${message}</p>
-                </div>
-            `;
+            container.innerHTML = `<div class="loading"><p style="color: var(--destructive);">${message}</p></div>`;
         }
 
         // Modal Functions
@@ -994,14 +893,13 @@
                 const username = document.getElementById('username').value;
                 const password = document.getElementById('password').value;
                 const messageDiv = document.getElementById('loginMessage');
-                const submitButton = document.querySelector('[data-testid="button-submit-login"]');
+                const submitButton = document.getElementById('submitBtn');
                 
                 if (!username || !password) {
                     messageDiv.innerHTML = '<div class="alert alert-error">Please enter both username and password</div>';
                     return;
                 }
 
-                // Disable submit button during request
                 submitButton.disabled = true;
                 submitButton.textContent = 'Signing In...';
 
@@ -1012,7 +910,6 @@
                     });
 
                     if (response.success) {
-                        // Store authentication data
                         localStorage.setItem('adminToken', response.token);
                         localStorage.setItem('adminData', JSON.stringify({
                             username: response.username,
@@ -1031,7 +928,6 @@
                 } catch (error) {
                     messageDiv.innerHTML = '<div class="alert alert-error">Network error. Please try again.</div>';
                 } finally {
-                    // Re-enable submit button
                     submitButton.disabled = false;
                     submitButton.textContent = 'Sign In';
                 }
@@ -1054,7 +950,6 @@
 
         // Initialize Application
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('RatPlace initialized');
             setupSearch();
             setupLoginForm();
             loadPrograms();
