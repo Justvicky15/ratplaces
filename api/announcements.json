@@ -1,1 +1,52 @@
-{}
+[
+  {
+    "id": "ann_1756404136373_ami66t",
+    "title": "Final Test Announcement",
+    "message": "All systems are working correctly!",
+    "priority": "normal",
+    "author": "admin",
+    "authorAvatar": "🔧",
+    "authorAvatarUrl": "https://via.placeholder.com/48x48/4169E1/FFFFFF?text=🔧",
+    "createdAt": "2025-08-28T18:02:16.373Z"
+  },
+  {
+    "id": "ann_1756404101499_au4dxn",
+    "title": "Fixed Announcement Test",
+    "message": "This announcement should now publish without errors after the frontend fixes.",
+    "priority": "high",
+    "author": "admin",
+    "authorAvatar": "🔧",
+    "authorAvatarUrl": "https://via.placeholder.com/48x48/4169E1/FFFFFF?text=🔧",
+    "createdAt": "2025-08-28T18:01:41.499Z"
+  },
+  {
+    "id": "ann_1756404057906_ovxsj8",
+    "title": "Test Announcement",
+    "message": "This is a test announcement message",
+    "priority": "normal",
+    "author": "admin",
+    "authorAvatar": "🔧",
+    "authorAvatarUrl": "https://via.placeholder.com/48x48/4169E1/FFFFFF?text=🔧",
+    "createdAt": "2025-08-28T18:00:57.906Z"
+  },
+  {
+    "id": "ann_1756403903329_ijm2ry",
+    "title": "System Maintenance Scheduled",
+    "message": "We will be performing scheduled maintenance on our servers this weekend. All services will remain operational, but you may experience brief interruptions.",
+    "priority": "normal",
+    "author": "admin",
+    "authorAvatar": "🔧",
+    "authorAvatarUrl": "https://via.placeholder.com/48x48/4169E1/FFFFFF?text=🔧",
+    "createdAt": "2025-08-28T17:58:23.329Z"
+  },
+  {
+    "id": "ann_1756403493282_97z2ci",
+    "title": "New Security Update Available",
+    "message": "We have released a new security update with enhanced protection features. Please update your tools accordingly.",
+    "priority": "high",
+    "author": "admin",
+    "authorAvatar": "🔧",
+    "authorAvatarUrl": "https://via.placeholder.com/48x48/4169E1/FFFFFF?text=🔧",
+    "createdAt": "2025-08-28T17:51:33.282Z"
+  }
+]
