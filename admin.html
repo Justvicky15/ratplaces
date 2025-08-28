@@ -1055,23 +1055,55 @@
             if (confirm('Are you sure you want to logout?')) {
                 localStorage.removeItem('adminToken');
                 localStorage.removeItem('adminData');
-                window.location.href = '/';
+                // Clear any other session data
+                sessionStorage.clear();
+                // Redirect to main page
+                window.location.href = '/?logout=1';
             }
         }
 
         function checkAuth() {
             const token = localStorage.getItem('adminToken');
-            if (!token) {
+            const adminData = localStorage.getItem('adminData');
+            
+            if (!token || !adminData) {
+                // Clear any corrupted data
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminData');
+                // Redirect to main page to login
                 window.location.href = '/';
                 return false;
             }
-            return true;
+            
+            try {
+                const data = JSON.parse(adminData);
+                // Check if login is still valid (optional: add expiration check)
+                const loginTime = new Date(data.loginTime);
+                const now = new Date();
+                const hoursSinceLogin = (now - loginTime) / (1000 * 60 * 60);
+                
+                // Auto-logout after 24 hours
+                if (hoursSinceLogin > 24) {
+                    logout();
+                    return false;
+                }
+                
+                return true;
+            } catch {
+                // Invalid data format, clear and redirect
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminData');
+                window.location.href = '/';
+                return false;
+            }
         }
 
         // Initialize Application
         document.addEventListener('DOMContentLoaded', () => {
+            // First check authentication - this will redirect if not logged in
             if (!checkAuth()) return;
             
+            // If we reach here, user is authenticated
             const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
             if (adminData.username) {
                 document.getElementById('adminUsername').textContent = adminData.username;
@@ -1080,6 +1112,13 @@
 
             setupForms();
             loadDashboardStats();
+        });
+        
+        // Also check auth when page becomes visible (tab switching)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                checkAuth();
+            }
         });
     </script>
 </body>
