@@ -757,26 +757,7 @@
                 } else if (response && Array.isArray(response)) {
                     displayAnnouncements(response);
                 } else {
-                    // Create sample announcements if none exist
-                    const sampleAnnouncements = [
-                        {
-                            id: 'sample1',
-                            title: 'Welcome to RatPlace!',
-                            message: 'Your premier marketplace for security tools and software solutions. Browse our catalog and find what you need!',
-                            author: 'RatPlace Team',
-                            createdAt: new Date().toISOString(),
-                            priority: 'high'
-                        },
-                        {
-                            id: 'sample2',
-                            title: 'Quality Guarantee',
-                            message: 'All tools on RatPlace are tested and verified. Contact sellers directly for support and custom requests.',
-                            author: 'Quality Team',
-                            createdAt: new Date(Date.now() - 86400000).toISOString(),
-                            priority: 'normal'
-                        }
-                    ];
-                    displayAnnouncements(sampleAnnouncements);
+                    displayAnnouncements([]);
                 }
             } catch (error) {
                 showError('announcementsContainer', 'Failed to load announcements');
@@ -801,7 +782,10 @@
                             </div>
                             <div class="announcement-message">${escapeHtml(announcement.message)}</div>
                             <div class="announcement-author">
-                                <span>📝</span>
+                                ${announcement.authorAvatarUrl ? 
+                                    `<img src="${announcement.authorAvatarUrl}" alt="${escapeHtml(announcement.author)}" style="width: 20px; height: 20px; border-radius: 50%; margin-right: 4px;">` : 
+                                    `<span>${announcement.authorAvatar || '📝'}</span>`
+                                }
                                 <span>${escapeHtml(announcement.author || 'Admin')}</span>
                             </div>
                         </div>
