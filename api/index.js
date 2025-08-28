@@ -308,11 +308,9 @@ async function handleAuth(req, res, method, requestId) {
     console.log(`[${requestId}] Auth successful for ${user.username}`);
     return sendSuccess(res, {
       token,
-      user: {
-        username: user.username,
-        avatar: user.avatar || '👤',
-        role: user.role || 'admin'
-      }
+      username: user.username,
+      avatar: user.avatar || '👤',
+      role: user.role || 'admin'
     }, 'Authentication successful');
     
   } catch (error) {
