@@ -618,9 +618,9 @@
                 🐀 RatPlace
             </a>
             <div class="nav-buttons">
-                <button class="btn btn-ghost" onclick="checkLoginState()" id="loginBtn">
+                <a href="/login" class="btn btn-ghost" id="loginBtn">
                     Sign In
-                </button>
+                </a>
                 <button class="btn btn-default" onclick="goToAdmin()" id="adminBtn">
                     Admin Panel
                 </button>
@@ -1057,16 +1057,19 @@
                     });
 
                     if (response.success) {
+                        // Extract user data from the response
+                        const userData = response.data || response;
+                        
                         // Store session data with proper expiry and login state
                         const sessionData = {
-                            username: response.username,
-                            avatar: response.avatar,
-                            role: response.role,
+                            username: userData.username,
+                            avatar: userData.avatar,
+                            role: userData.role,
                             loginTime: new Date().toISOString(),
                             expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
                         };
                         
-                        localStorage.setItem('adminToken', response.token);
+                        localStorage.setItem('adminToken', userData.token);
                         localStorage.setItem('adminData', JSON.stringify(sessionData));
                         localStorage.setItem('isLoggedIn', 'true');
                         
@@ -1138,7 +1141,9 @@
                 if (Date.now() < expiresAt) {
                     // User is logged in and session is valid
                     loginBtn.textContent = `Welcome, ${adminData.username}`;
-                    loginBtn.onclick = () => {
+                    loginBtn.href = '#';
+                    loginBtn.onclick = (e) => {
+                        e.preventDefault();
                         if (confirm('Do you want to logout?')) {
                             localStorage.removeItem('adminToken');
                             localStorage.removeItem('adminData');
@@ -1148,7 +1153,7 @@
                     };
                     adminBtn.textContent = 'Go to Admin Panel';
                     adminBtn.onclick = () => {
-                        window.location.href = 'admin.html';
+                        window.location.href = '/admin';
                     };
                     return;
                 }
@@ -1161,9 +1166,12 @@
             
             // Default state - not logged in
             loginBtn.textContent = 'Sign In';
-            loginBtn.onclick = () => showLoginModal();
+            loginBtn.href = '/login';
+            loginBtn.onclick = null;
             adminBtn.textContent = 'Admin Panel';
-            adminBtn.onclick = () => showLoginModal();
+            adminBtn.onclick = () => {
+                window.location.href = '/login';
+            };
         }
 
         // Close modal on escape key
@@ -1188,6 +1196,17 @@
                 // Clear any remaining session data and show logout message
                 localStorage.clear();
                 sessionStorage.clear();
+                // Remove the parameter from URL without reloading
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            
+            // Check if user needs to login (redirected from admin page)
+            if (urlParams.get('needsLogin') === '1') {
+                // Show login modal immediately
+                setTimeout(() => {
+                    showLoginModal();
+                    document.getElementById('loginMessage').innerHTML = '<div class="alert alert-error">Please login to access the admin panel</div>';
+                }, 500);
                 // Remove the parameter from URL without reloading
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
