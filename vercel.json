@@ -11,6 +11,14 @@
       "dest": "/api/index.js"
     },
     {
+      "src": "/login\\.html",
+      "dest": "/login.html"
+    },
+    {
+      "src": "/login",
+      "dest": "/login.html"
+    },
+    {
       "src": "/admin\\.html",
       "dest": "/admin.html"
     },
