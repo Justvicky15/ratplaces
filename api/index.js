@@ -1,601 +1,430 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const http = require('http');
 
-// Enhanced body parser for serverless environments
-async function parseRequestBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    let totalSize = 0;
-    const maxSize = 10 * 1024 * 1024; // 10MB limit
-    
-    const timeout = setTimeout(() => {
-      req.removeAllListeners();
-      reject(new Error('Request timeout'));
-    }, 30000); // 30 second timeout
-    
-    req.on('data', (chunk) => {
-      totalSize += chunk.length;
-      if (totalSize > maxSize) {
-        clearTimeout(timeout);
-        req.removeAllListeners();
-        reject(new Error('Request body too large'));
-        return;
-      }
-      chunks.push(chunk);
-    });
-    
-    req.on('end', () => {
-      clearTimeout(timeout);
-      req.removeAllListeners();
-      
-      try {
-        const body = Buffer.concat(chunks).toString('utf8');
-        if (body.trim()) {
-          const parsed = JSON.parse(body);
-          resolve(parsed);
-        } else {
-          resolve({});
-        }
-      } catch (error) {
-        console.error('JSON parse error:', error.message);
-        reject(new Error('Invalid JSON in request body'));
-      }
-    });
-    
-    req.on('error', (error) => {
-      clearTimeout(timeout);
-      req.removeAllListeners();
-      console.error('Request error:', error.message);
-      reject(error);
-    });
-  });
-}
-
-// Enhanced CORS and security headers for serverless
-function setServerlessHeaders(res) {
-  // CORS headers for cross-origin support
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Max-Age', '86400');
-  
-  // Security headers
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  
-  // Content type
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  
-  // Cache control for API responses
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-  res.setHeader('Pragma', 'no-cache');
-}
-
-// Secure file operations with error handling
-function secureFileRead(filePath, defaultValue = []) {
-  try {
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath, 'utf8');
-      const parsed = JSON.parse(data);
-      return Array.isArray(parsed) ? parsed : defaultValue;
-    }
-  } catch (error) {
-    console.error(`Error reading ${filePath}:`, error.message);
+// Hardcoded admin users
+const ADMIN_USERS = {
+  'admin': {
+    username: 'admin',
+    password: 'admin123'
+  },
+  'manager': {
+    username: 'manager',
+    password: 'manager456'
   }
-  return defaultValue;
+};
+
+// Simple session storage (in production, use proper session management)
+const sessions = new Map();
+const activeUsers = new Set();
+
+// Ensure tmp directory exists
+const TMP_DIR = path.join(process.cwd(), 'tmp');
+if (!fs.existsSync(TMP_DIR)) {
+  fs.mkdirSync(TMP_DIR, { recursive: true });
 }
 
-function secureFileWrite(filePath, data) {
+// Utility functions
+function generateId() {
+  return crypto.randomBytes(16).toString('hex');
+}
+
+function generateSessionToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+function validateSession(token) {
+  return sessions.has(token);
+}
+
+function getSessionUser(token) {
+  return sessions.get(token);
+}
+
+function loadPrograms() {
   try {
-    const jsonData = JSON.stringify(data, null, 2);
-    fs.writeFileSync(filePath, jsonData, 'utf8');
+    const files = fs.readdirSync(TMP_DIR).filter(file => file.endsWith('.json'));
+    const programs = [];
+    
+    for (const file of files) {
+      try {
+        const content = fs.readFileSync(path.join(TMP_DIR, file), 'utf8');
+        const program = JSON.parse(content);
+        programs.push(program);
+      } catch (error) {
+        console.error(`Error loading program ${file}:`, error);
+      }
+    }
+    
+    return programs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  } catch (error) {
+    console.error('Error loading programs:', error);
+    return [];
+  }
+}
+
+function saveProgram(program) {
+  try {
+    const filename = `${program.id}.json`;
+    const filepath = path.join(TMP_DIR, filename);
+    fs.writeFileSync(filepath, JSON.stringify(program, null, 2));
     return true;
   } catch (error) {
-    console.error(`Error writing ${filePath}:`, error.message);
+    console.error('Error saving program:', error);
     return false;
   }
 }
 
-// Input sanitization for security
-function sanitizeInput(input, maxLength = 500) {
-  if (!input) return '';
-  return String(input)
-    .trim()
-    .substring(0, maxLength)
-    .replace(/<[^>]*>/g, '') // Remove HTML tags
-    .replace(/[<>'"&]/g, (match) => {
-      const entities = {
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#x27;',
-        '&': '&amp;'
-      };
-      return entities[match] || match;
-    });
+function deleteProgram(id) {
+  try {
+    const filename = `${id}.json`;
+    const filepath = path.join(TMP_DIR, filename);
+    if (fs.existsSync(filepath)) {
+      fs.unlinkSync(filepath);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error deleting program:', error);
+    return false;
+  }
 }
 
-// Enhanced token validation for serverless
-function validateAuthToken(authHeader) {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    console.log('No valid auth header found');
+function loadProgram(id) {
+  try {
+    const filename = `${id}.json`;
+    const filepath = path.join(TMP_DIR, filename);
+    if (fs.existsSync(filepath)) {
+      const content = fs.readFileSync(filepath, 'utf8');
+      return JSON.parse(content);
+    }
+    return null;
+  } catch (error) {
+    console.error('Error loading program:', error);
     return null;
   }
-  
-  const token = authHeader.substring(7);
-  console.log('Validating token:', token.substring(0, 20) + '...');
-  
-  // Simple validation - token should have format: username_timestamp_random_hash
-  if (token && token.length > 15 && token.includes('_')) {
-    const parts = token.split('_');
-    if (parts.length >= 3) {
-      const username = parts[0];
-      const timestamp = parseInt(parts[1]);
-      
-      // Check if timestamp is valid
-      if (isNaN(timestamp)) {
-        console.log('Invalid timestamp in token');
-        return null;
-      }
-      
-      const age = Date.now() - timestamp;
-      console.log('Token age (hours):', age / (1000 * 60 * 60));
-      
-      // Token valid for 24 hours
-      if (age < 24 * 60 * 60 * 1000) {
-        console.log('Token validation successful for user:', username);
-        return { valid: true, username: username };
-      } else {
-        console.log('Token expired');
-        return null;
-      }
-    }
-  }
-  
-  console.log('Token validation failed');
-  return null;
 }
 
-// Generate secure token
-function generateSecureToken(username) {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 15);
-  const hash = Math.random().toString(36).substring(2, 10);
-  return `${username}_${timestamp}_${random}_${hash}`;
-}
-
-// Load credentials with defaults
-function loadCredentials() {
-  const credentialsPath = path.join(__dirname, 'logins.json');
-  const credentials = secureFileRead(credentialsPath, []);
-  
-  // Ensure we have default admin accounts
-  if (credentials.length === 0) {
-    const defaultCredentials = [
-      { username: "justvicky152", password: "Boekenlezenissaai1102?", avatar: "👑", role: "owner" },
-      { username: "admin", password: "admin123", avatar: "🔧", role: "admin" },
-      { username: "ratplace", password: "ratplace2024", avatar: "🏪", role: "admin" }
-    ];
-    
-    secureFileWrite(credentialsPath, defaultCredentials);
-    return defaultCredentials;
-  }
-  
-  return credentials;
-}
-
-// Error response helper
-function sendError(res, statusCode, message, details = null) {
-  const errorResponse = {
-    success: false,
-    error: message,
-    message: message, // Also include message field for compatibility
-    timestamp: new Date().toISOString()
-  };
-  
-  if (details && process.env.NODE_ENV !== 'production') {
-    errorResponse.details = details;
-  }
-  
-  console.log(`Sending error ${statusCode}:`, message);
-  res.status(statusCode).json(errorResponse);
-}
-
-// Success response helper  
-function sendSuccess(res, data, message = 'Success', statusCode = 200) {
-  const response = {
-    success: true,
-    message,
-    timestamp: new Date().toISOString()
-  };
-  
-  if (data !== undefined) {
-    response.data = data;
-  }
-  
-  console.log(`Sending success ${statusCode}:`, message);
-  res.status(statusCode).json(response);
-}
-
-// Main serverless function - optimized for Vercel
-module.exports = async (req, res) => {
-  const startTime = Date.now();
-  const requestId = Math.random().toString(36).substring(2, 9);
-  
-  console.log(`[${new Date().toISOString()}] [${requestId}] ${req.method} ${req.url}`);
-  
+// Function to serve static files
+function serveStaticFile(filePath, res) {
   try {
-    // Set headers immediately
-    setServerlessHeaders(res);
+    const fullPath = path.join(process.cwd(), filePath);
     
-    // Handle CORS preflight
-    if (req.method === 'OPTIONS') {
-      console.log(`[${requestId}] CORS preflight - ${Date.now() - startTime}ms`);
-      return res.status(200).end();
+    if (!fs.existsSync(fullPath)) {
+      res.statusCode = 404;
+      res.end('Not Found');
+      return;
     }
-    
-    const { method, url = '/' } = req;
-    const cleanUrl = url.split('?')[0];
-    const pathParts = cleanUrl.split('/').filter(Boolean);
-    
-    // Remove 'api' prefix if present
-    if (pathParts[0] === 'api') {
-      pathParts.shift();
-    }
-    
-    const endpoint = pathParts[0] || '';
-    const resourceId = pathParts[1] || '';
-    
-    console.log(`[${requestId}] Routing: ${method} /${endpoint} ${resourceId ? `(${resourceId})` : ''}`);
-    
-    // Route handling
-    switch (endpoint) {
-      case 'health':
-        return handleHealthCheck(req, res, requestId);
-        
-      case 'auth':
-        return await handleAuth(req, res, method, requestId);
-        
-      case 'programs':
-        return await handlePrograms(req, res, method, resourceId, requestId);
-        
-      case 'announcements':
-        return await handleAnnouncements(req, res, method, requestId);
-        
-      case 'analytics':
-        return await handleAnalytics(req, res, method, requestId);
-        
-      default:
-        console.log(`[${requestId}] Unknown endpoint: ${endpoint}`);
-        return sendError(res, 404, `API endpoint not found: /${endpoint}`);
-    }
-    
-  } catch (error) {
-    console.error(`[${requestId}] Unhandled error:`, error);
-    return sendError(res, 500, 'Internal server error', error.message);
-  }
-};
 
-// Health check endpoint
-function handleHealthCheck(req, res, requestId) {
-  if (req.method !== 'GET') {
-    return sendError(res, 405, 'Method not allowed');
-  }
-  
-  const healthData = {
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    version: '1.0.0',
-    environment: process.env.NODE_ENV || 'development'
-  };
-  
-  console.log(`[${requestId}] Health check successful`);
-  return sendSuccess(res, healthData, 'Service is healthy');
-}
-
-// Authentication endpoint
-async function handleAuth(req, res, method, requestId) {
-  if (method !== 'POST') {
-    return sendError(res, 405, 'Only POST method allowed for authentication');
-  }
-  
-  try {
-    const body = await parseRequestBody(req);
-    const { username, password } = body;
-    
-    console.log(`[${requestId}] Auth attempt for user:`, username);
-    
-    if (!username || !password) {
-      console.log(`[${requestId}] Auth failed: Missing credentials`);
-      return sendError(res, 400, 'Username and password are required');
-    }
-    
-    const credentials = loadCredentials();
-    const user = credentials.find(u => 
-      u.username === sanitizeInput(username, 50) && 
-      u.password === password // Don't sanitize password to preserve special chars
-    );
-    
-    if (!user) {
-      console.log(`[${requestId}] Auth failed: Invalid credentials for ${username}`);
-      return sendError(res, 401, 'Invalid username or password');
-    }
-    
-    const token = generateSecureToken(user.username);
-    
-    console.log(`[${requestId}] Auth successful for ${user.username}`);
-    return sendSuccess(res, {
-      token,
-      username: user.username,
-      avatar: user.avatar || '👤',
-      role: user.role || 'admin'
-    }, 'Authentication successful');
-    
-  } catch (error) {
-    console.error(`[${requestId}] Auth error:`, error.message);
-    return sendError(res, 400, 'Invalid request body');
-  }
-}
-
-// Programs endpoint
-async function handlePrograms(req, res, method, resourceId, requestId) {
-  const programsPath = path.join(__dirname, 'programs.json');
-  
-  switch (method) {
-    case 'GET':
-      try {
-        const programs = secureFileRead(programsPath, []);
-        console.log(`[${requestId}] Retrieved ${programs.length} programs`);
-        return sendSuccess(res, programs, `Found ${programs.length} programs`);
-      } catch (error) {
-        console.error(`[${requestId}] Error loading programs:`, error.message);
-        return sendError(res, 500, 'Failed to load programs');
-      }
-      
-    case 'POST':
-      try {
-        console.log(`[${requestId}] Creating program - checking auth...`);
-        
-        // Validate authentication
-        const authResult = validateAuthToken(req.headers.authorization);
-        if (!authResult || !authResult.valid) {
-          console.log(`[${requestId}] Programs POST: Unauthorized - invalid token`);
-          return sendError(res, 401, 'Authentication required');
-        }
-        
-        console.log(`[${requestId}] Auth validated for user: ${authResult.username}`);
-        
-        const body = await parseRequestBody(req);
-        console.log(`[${requestId}] Received program data:`, Object.keys(body));
-        
-        const { name, category, price, contactUsername, imageUrl, downloadUrl, description, customMessage } = body;
-        
-        // Enhanced validation
-        const validationErrors = [];
-        if (!name || !name.trim()) validationErrors.push('Program name is required');
-        if (!category) validationErrors.push('Category is required');
-        if (price === undefined || price === null || price === '') validationErrors.push('Price is required');
-        if (!contactUsername || !contactUsername.trim()) validationErrors.push('Contact username is required');
-        if (!downloadUrl || !downloadUrl.trim()) validationErrors.push('Download URL is required');
-        if (!description || !description.trim()) validationErrors.push('Description is required');
-        
-        if (validationErrors.length > 0) {
-          console.log(`[${requestId}] Programs POST: Validation errors`, validationErrors);
-          return sendError(res, 400, 'Validation failed: ' + validationErrors.join(', '));
-        }
-        
-        // Create sanitized program
-        const newProgram = {
-          id: `prog_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
-          name: sanitizeInput(name, 100),
-          category: sanitizeInput(category, 50),
-          price: parseFloat(price).toFixed(2),
-          contactUsername: sanitizeInput(contactUsername, 50),
-          imageUrl: sanitizeInput(imageUrl || '', 500) || 
-                   `https://via.placeholder.com/300x200/000000/FFFFFF?text=${encodeURIComponent(name.substring(0, 20))}`,
-          downloadUrl: sanitizeInput(downloadUrl, 500),
-          description: sanitizeInput(description, 1000),
-          customMessage: sanitizeInput(customMessage || '', 500),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          status: 'active',
-          author: authResult.username
-        };
-        
-        console.log(`[${requestId}] Creating program with ID: ${newProgram.id}`);
-        
-        // Save program
-        const programs = secureFileRead(programsPath, []);
-        programs.unshift(newProgram); // Add to beginning
-        
-        if (secureFileWrite(programsPath, programs)) {
-          console.log(`[${requestId}] Program created successfully: ${newProgram.id}`);
-          return sendSuccess(res, newProgram, 'Program created successfully', 201);
-        } else {
-          console.log(`[${requestId}] Failed to save program to file`);
-          return sendError(res, 500, 'Failed to save program');
-        }
-        
-      } catch (error) {
-        console.error(`[${requestId}] Error creating program:`, error.message, error.stack);
-        return sendError(res, 400, 'Invalid request data: ' + error.message);
-      }
-      
-    case 'DELETE':
-      try {
-        // Validate authentication
-        const authResult = validateAuthToken(req.headers.authorization);
-        if (!authResult || !authResult.valid) {
-          return sendError(res, 401, 'Authentication required');
-        }
-        
-        if (!resourceId) {
-          return sendError(res, 400, 'Program ID required');
-        }
-        
-        const programs = secureFileRead(programsPath, []);
-        const initialLength = programs.length;
-        const filteredPrograms = programs.filter(p => p.id !== resourceId);
-        
-        if (filteredPrograms.length === initialLength) {
-          return sendError(res, 404, 'Program not found');
-        }
-        
-        if (secureFileWrite(programsPath, filteredPrograms)) {
-          console.log(`[${requestId}] Program deleted: ${resourceId}`);
-          return sendSuccess(res, null, 'Program deleted successfully');
-        } else {
-          return sendError(res, 500, 'Failed to delete program');
-        }
-        
-      } catch (error) {
-        console.error(`[${requestId}] Error deleting program:`, error.message);
-        return sendError(res, 500, 'Failed to delete program');
-      }
-      
-    default:
-      return sendError(res, 405, `Method ${method} not allowed for programs`);
-  }
-}
-
-// Announcements endpoint
-async function handleAnnouncements(req, res, method, requestId) {
-  const announcementsPath = path.join(__dirname, 'announcements.json');
-  
-  switch (method) {
-    case 'GET':
-      try {
-        const announcements = secureFileRead(announcementsPath, []);
-        console.log(`[${requestId}] Retrieved ${announcements.length} announcements`);
-        return sendSuccess(res, announcements, 'Announcements loaded successfully');
-      } catch (error) {
-        console.error(`[${requestId}] Error loading announcements:`, error.message);
-        return sendError(res, 500, 'Failed to load announcements');
-      }
-      
-    case 'POST':
-      try {
-        console.log(`[${requestId}] Creating announcement - checking auth...`);
-        
-        // Validate authentication
-        const authResult = validateAuthToken(req.headers.authorization);
-        if (!authResult || !authResult.valid) {
-          console.log(`[${requestId}] Announcements POST: Unauthorized - invalid token`);
-          return sendError(res, 401, 'Authentication required');
-        }
-        
-        console.log(`[${requestId}] Auth validated for user: ${authResult.username}`);
-        
-        const body = await parseRequestBody(req);
-        const { title, message, priority = 'normal' } = body;
-        
-        // Validation
-        if (!title || !message) {
-          return sendError(res, 400, 'Title and message are required');
-        }
-        
-        if (title.length > 200) {
-          return sendError(res, 400, 'Title must be 200 characters or less');
-        }
-        
-        if (message.length > 1000) {
-          return sendError(res, 400, 'Message must be 1000 characters or less');
-        }
-        
-        if (!['low', 'normal', 'high'].includes(priority)) {
-          return sendError(res, 400, 'Priority must be low, normal, or high');
-        }
-        
-        // Get user data from logins
-        const logins = secureFileRead(path.join(__dirname, 'logins.json'), []);
-        const userData = logins.find(u => u.username === authResult.username);
-        
-        // Create new announcement
-        const newAnnouncement = {
-          id: `ann_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-          title: sanitizeInput(title, 200),
-          message: sanitizeInput(message, 1000),
-          priority: priority,
-          author: authResult.username,
-          authorAvatar: userData ? userData.avatar : '📢',
-          authorAvatarUrl: userData ? userData.avatarUrl : null,
-          createdAt: new Date().toISOString()
-        };
-        
-        console.log(`[${requestId}] Creating announcement with ID: ${newAnnouncement.id}`);
-        
-        // Save announcement
-        const announcements = secureFileRead(announcementsPath, []);
-        announcements.unshift(newAnnouncement); // Add to beginning
-        
-        if (secureFileWrite(announcementsPath, announcements)) {
-          console.log(`[${requestId}] Announcement created successfully: ${newAnnouncement.id}`);
-          return sendSuccess(res, newAnnouncement, 'Announcement published successfully', 201);
-        } else {
-          console.log(`[${requestId}] Failed to save announcement to file`);
-          return sendError(res, 500, 'Failed to save announcement');
-        }
-        
-      } catch (error) {
-        console.error(`[${requestId}] Error creating announcement:`, error.message, error.stack);
-        return sendError(res, 400, 'Invalid request data: ' + error.message);
-      }
-      
-    default:
-      return sendError(res, 405, `Method ${method} not allowed for announcements`);
-  }
-}
-
-// Analytics endpoint
-async function handleAnalytics(req, res, method, requestId) {
-  if (method !== 'GET') {
-    return sendError(res, 405, 'Only GET method allowed for analytics');
-  }
-  
-  // Validate authentication
-  const authResult = validateAuthToken(req.headers.authorization);
-  if (!authResult || !authResult.valid) {
-    return sendError(res, 401, 'Authentication required');
-  }
-  
-  try {
-    const programsPath = path.join(__dirname, 'programs.json');
-    const programs = secureFileRead(programsPath, []);
-    
-    const analyticsData = {
-      programs: {
-        total: programs.length,
-        byCategory: programs.reduce((acc, prog) => {
-          acc[prog.category] = (acc[prog.category] || 0) + 1;
-          return acc;
-        }, {}),
-        recent: programs.filter(p => {
-          const created = new Date(p.createdAt);
-          const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-          return created > weekAgo;
-        }).length
-      },
-      visitors: {
-        total: Math.floor(Math.random() * 1000) + 500,
-        today: Math.floor(Math.random() * 100) + 50,
-        thisWeek: Math.floor(Math.random() * 500) + 200
-      },
-      system: {
-        uptime: process.uptime(),
-        timestamp: new Date().toISOString(),
-        version: '1.0.0'
-      }
+    const ext = path.extname(filePath);
+    const contentTypes = {
+      '.html': 'text/html',
+      '.css': 'text/css',
+      '.js': 'application/javascript',
+      '.json': 'application/json',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.svg': 'image/svg+xml',
+      '.ico': 'image/x-icon'
     };
+
+    const contentType = contentTypes[ext] || 'text/plain';
+    const content = fs.readFileSync(fullPath);
     
-    console.log(`[${requestId}] Analytics retrieved`);
-    return sendSuccess(res, analyticsData, 'Analytics data retrieved');
-    
+    res.setHeader('Content-Type', contentType);
+    res.statusCode = 200;
+    res.end(content);
   } catch (error) {
-    console.error(`[${requestId}] Error loading analytics:`, error.message);
-    return sendError(res, 500, 'Failed to load analytics');
+    console.error('Error serving static file:', error);
+    res.statusCode = 500;
+    res.end('Internal Server Error');
   }
 }
+
+// API Handler
+async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  const { url, method } = req;
+  const urlPath = new URL(url, `http://${req.headers.host}`).pathname;
+  const pathSegments = urlPath.split('/').filter(Boolean);
+
+  try {
+    // Parse request body for POST/PUT requests
+    let body = null;
+    if (method === 'POST' || method === 'PUT') {
+      body = '';
+      req.on('data', chunk => {
+        body += chunk.toString();
+      });
+      await new Promise(resolve => {
+        req.on('end', () => {
+          try {
+            body = body ? JSON.parse(body) : {};
+          } catch (error) {
+            body = {};
+          }
+          resolve();
+        });
+      });
+    }
+
+    // Routes
+    if (pathSegments[1] === 'login' && method === 'POST') {
+      // Admin login
+      const { username, password } = body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password required' });
+      }
+
+      const user = ADMIN_USERS[username];
+      if (!user || user.password !== password) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+
+      const sessionToken = generateSessionToken();
+      sessions.set(sessionToken, { username, loginTime: new Date() });
+      activeUsers.add(username);
+
+      return res.status(200).json({ 
+        success: true, 
+        token: sessionToken,
+        user: { username }
+      });
+    }
+
+    if (pathSegments[1] === 'logout' && method === 'POST') {
+      // Admin logout
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        const user = getSessionUser(token);
+        if (user) {
+          activeUsers.delete(user.username);
+          sessions.delete(token);
+        }
+      }
+      return res.status(200).json({ success: true });
+    }
+
+    if (pathSegments[1] === 'stats' && method === 'GET') {
+      // Get admin statistics
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const token = authHeader.substring(7);
+      if (!validateSession(token)) {
+        return res.status(401).json({ error: 'Invalid session' });
+      }
+
+      const programs = loadPrograms();
+      return res.status(200).json({
+        activeUsers: activeUsers.size,
+        totalPrograms: programs.length,
+        lastUpdate: new Date().toISOString()
+      });
+    }
+
+    if (pathSegments[1] === 'programs') {
+      if (method === 'GET' && pathSegments.length === 2) {
+        // Get all programs (public endpoint)
+        const programs = loadPrograms();
+        // Remove password and sensitive info for public listing
+        const publicPrograms = programs.map(({ password, ...program }) => program);
+        return res.status(200).json(publicPrograms);
+      }
+
+      if (method === 'GET' && pathSegments.length === 3) {
+        // Get specific program
+        const programId = pathSegments[2];
+        const program = loadProgram(programId);
+        
+        if (!program) {
+          return res.status(404).json({ error: 'Program not found' });
+        }
+
+        // Check if program has password protection
+        if (program.password) {
+          const urlParams = new URL(url, `http://${req.headers.host}`);
+          const providedPassword = urlParams.searchParams.get('password');
+          
+          if (!providedPassword || providedPassword !== program.password) {
+            return res.status(401).json({ error: 'Password required' });
+          }
+        }
+
+        // Remove password from response
+        const { password, ...publicProgram } = program;
+        return res.status(200).json(publicProgram);
+      }
+
+      if (method === 'POST') {
+        // Create new program (admin only)
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        const token = authHeader.substring(7);
+        if (!validateSession(token)) {
+          return res.status(401).json({ error: 'Invalid session' });
+        }
+
+        const { title, shortDescription, fullDescription, mediaLink, price, contactInfo, programPassword } = body;
+
+        if (!title || !shortDescription || !fullDescription || !contactInfo) {
+          return res.status(400).json({ error: 'Required fields missing' });
+        }
+
+        const program = {
+          id: generateId(),
+          title: title.trim(),
+          shortDescription: shortDescription.trim(),
+          fullDescription: fullDescription.trim(),
+          mediaLink: mediaLink ? mediaLink.trim() : null,
+          price: price || 'FREE',
+          contactInfo: contactInfo.trim(),
+          password: programPassword ? programPassword.trim() : null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        if (saveProgram(program)) {
+          const { password, ...publicProgram } = program;
+          return res.status(201).json(publicProgram);
+        } else {
+          return res.status(500).json({ error: 'Failed to save program' });
+        }
+      }
+
+      if (method === 'PUT' && pathSegments.length === 3) {
+        // Update program (admin only)
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        const token = authHeader.substring(7);
+        if (!validateSession(token)) {
+          return res.status(401).json({ error: 'Invalid session' });
+        }
+
+        const programId = pathSegments[2];
+        const existingProgram = loadProgram(programId);
+        
+        if (!existingProgram) {
+          return res.status(404).json({ error: 'Program not found' });
+        }
+
+        const { title, shortDescription, fullDescription, mediaLink, price, contactInfo, programPassword } = body;
+
+        if (!title || !shortDescription || !fullDescription || !contactInfo) {
+          return res.status(400).json({ error: 'Required fields missing' });
+        }
+
+        const updatedProgram = {
+          ...existingProgram,
+          title: title.trim(),
+          shortDescription: shortDescription.trim(),
+          fullDescription: fullDescription.trim(),
+          mediaLink: mediaLink ? mediaLink.trim() : null,
+          price: price || 'FREE',
+          contactInfo: contactInfo.trim(),
+          password: programPassword ? programPassword.trim() : null,
+          updatedAt: new Date().toISOString()
+        };
+
+        if (saveProgram(updatedProgram)) {
+          const { password, ...publicProgram } = updatedProgram;
+          return res.status(200).json(publicProgram);
+        } else {
+          return res.status(500).json({ error: 'Failed to update program' });
+        }
+      }
+
+      if (method === 'DELETE' && pathSegments.length === 3) {
+        // Delete program (admin only)
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        const token = authHeader.substring(7);
+        if (!validateSession(token)) {
+          return res.status(401).json({ error: 'Invalid session' });
+        }
+
+        const programId = pathSegments[2];
+        
+        if (deleteProgram(programId)) {
+          return res.status(200).json({ success: true });
+        } else {
+          return res.status(404).json({ error: 'Program not found' });
+        }
+      }
+    }
+
+    // Default 404 for unmatched routes
+    return res.status(404).json({ error: 'Route not found' });
+
+  } catch (error) {
+    console.error('API Error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+// Create HTTP server
+const server = http.createServer(async (req, res) => {
+  try {
+    const { url } = req;
+    
+    // Handle API routes
+    if (url.startsWith('/api/')) {
+      await handler(req, res);
+      return;
+    }
+    
+    // Handle static files
+    let filePath = url;
+    
+    // Default to index.html for root
+    if (filePath === '/') {
+      filePath = '/index.html';
+    }
+    
+    // Remove query parameters for file serving
+    filePath = filePath.split('?')[0];
+    
+    // Remove leading slash
+    if (filePath.startsWith('/')) {
+      filePath = filePath.substring(1);
+    }
+    
+    serveStaticFile(filePath, res);
+  } catch (error) {
+    console.error('Server error:', error);
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ error: 'Internal server error' }));
+  }
+});
+
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+module.exports = handler;
