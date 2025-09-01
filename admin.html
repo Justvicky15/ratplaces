@@ -3,1306 +3,249 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - RatPlace</title>
-    <meta name="description" content="Admin panel for RatPlace digital marketplace management">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔧</text></svg>">
-    <meta name="theme-color" content="#000000">
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --background: #000000;
-            --foreground: #ffffff;
-            --card: #0a0a0a;
-            --border: #262626;
-            --muted: #a1a1aa;
-            --primary: #ffffff;
-            --destructive: #dc2626;
-            --success: #22c55e;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: var(--background);
-            color: var(--foreground);
-            min-height: 100vh;
-            line-height: 1.5;
-        }
-
-        .admin-container {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            width: 280px;
-            background: var(--card);
-            border-right: 1px solid var(--border);
-            padding: 1.5rem 0;
-            flex-shrink: 0;
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            overflow-y: auto;
-        }
-
-        .sidebar-header {
-            padding: 0 1.5rem 1.5rem;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 1.5rem;
-        }
-
-        .admin-info {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .admin-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: var(--background);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-
-        .admin-details h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-
-        .admin-details p {
-            font-size: 0.875rem;
-            color: var(--muted);
-        }
-
-        .nav-menu {
-            list-style: none;
-            padding: 0;
-        }
-
-        .nav-item {
-            margin-bottom: 0.25rem;
-        }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1.5rem;
-            color: var(--muted);
-            text-decoration: none;
-            transition: all 0.15s ease;
-            cursor: pointer;
-            background: none;
-            border: none;
-            width: 100%;
-            font-size: 0.875rem;
-            text-align: left;
-            font-weight: 500;
-        }
-
-        .nav-link:hover {
-            color: var(--foreground);
-            background: #262626;
-        }
-
-        .nav-link.active {
-            color: var(--foreground);
-            background: #262626;
-            border-right: 2px solid var(--primary);
-        }
-
-        .nav-icon {
-            font-size: 1rem;
-            width: 20px;
-            text-align: center;
-        }
-
-        .sidebar-footer {
-            margin-top: auto;
-            padding: 1.5rem;
-            border-top: 1px solid var(--border);
-        }
-
-        .logout-btn {
-            width: 100%;
-            padding: 0.75rem;
-            background: rgba(220, 38, 38, 0.1);
-            color: var(--destructive);
-            border: 1px solid var(--destructive);
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .logout-btn:hover {
-            background: rgba(220, 38, 38, 0.2);
-        }
-
-        /* Main Content */
-        .main-content {
-            flex: 1;
-            padding: 2rem;
-            overflow-y: auto;
-            max-width: calc(100vw - 280px);
-        }
-
-        .content-header {
-            margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-        
-        .user-welcome {
-            font-size: 1rem;
-            color: var(--muted);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .user-welcome .user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: var(--background);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .content-title {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            letter-spacing: -0.02em;
-        }
-
-        .content-description {
-            color: var(--muted);
-            font-size: 1rem;
-        }
-
-        .content-section {
-            display: none;
-        }
-
-        .content-section.active {
-            display: block;
-        }
-
-        /* Forms and Cards */
-        .form-card {
-            background: var(--card);
-            border-radius: 8px;
-            padding: 2rem;
-            border: 1px solid var(--border);
-            margin-bottom: 2rem;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            font-size: 0.875rem;
-        }
-
-        .form-input, .form-select, .form-textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            background: var(--background);
-            color: var(--foreground);
-            font-size: 0.875rem;
-            transition: all 0.15s ease;
-        }
-
-        .form-input:focus, .form-select:focus, .form-textarea:focus {
-            outline: none;
-            border-color: #d4d4d8;
-            box-shadow: 0 0 0 2px rgba(212, 212, 216, 0.2);
-        }
-
-        .form-input::placeholder, .form-textarea::placeholder {
-            color: var(--muted);
-        }
-
-        .form-textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-
-        .form-select {
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23a1a1aa' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-            background-position: right 0.5rem center;
-            background-repeat: no-repeat;
-            background-size: 1.5em 1.5em;
-            padding-right: 2.5rem;
-        }
-
-        .submit-btn {
-            background: var(--primary);
-            color: var(--background);
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 6px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-
-        .submit-btn:hover {
-            background: #e5e5e5;
-        }
-
-        .submit-btn:disabled {
-            background: var(--muted);
-            cursor: not-allowed;
-        }
-
-        /* Messages */
-        .message {
-            padding: 0.75rem 1rem;
-            border-radius: 6px;
-            margin-bottom: 1rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .message.success {
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.2);
-            color: var(--success);
-        }
-
-        .message.error {
-            background: rgba(220, 38, 38, 0.1);
-            border: 1px solid rgba(220, 38, 38, 0.2);
-            color: var(--destructive);
-        }
-
-        /* Dashboard Cards */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: var(--card);
-            border-radius: 8px;
-            padding: 1.5rem;
-            border: 1px solid var(--border);
-            text-align: center;
-            transition: all 0.15s ease;
-        }
-
-        .stat-card:hover {
-            border-color: var(--muted);
-        }
-
-        .stat-icon {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 0.25rem;
-        }
-
-        .stat-label {
-            color: var(--muted);
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        /* Quick Actions */
-        .quick-actions {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .quick-btn {
-            background: #171717;
-            color: var(--foreground);
-            border: 1px solid var(--border);
-            padding: 0.75rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            font-size: 0.875rem;
-            font-weight: 500;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .quick-btn:hover {
-            background: #262626;
-        }
-
-        /* Program Management */
-        .programs-list {
-            display: grid;
-            gap: 1rem;
-        }
-
-        .program-item {
-            background: var(--background);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1.5rem;
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 1rem;
-            align-items: start;
-        }
-
-        .program-info h4 {
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .program-meta {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 0.5rem;
-            font-size: 0.875rem;
-            color: var(--muted);
-        }
-
-        .program-description {
-            color: var(--muted);
-            font-size: 0.875rem;
-            line-height: 1.5;
-        }
-
-        .program-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .btn-sm {
-            padding: 0.5rem 0.75rem;
-            font-size: 0.75rem;
-            border-radius: 4px;
-            border: 1px solid var(--border);
-            cursor: pointer;
-            transition: all 0.15s ease;
-            font-weight: 500;
-        }
-
-        .btn-outline {
-            background: transparent;
-            color: var(--foreground);
-        }
-
-        .btn-outline:hover {
-            background: #262626;
-        }
-
-        .btn-danger {
-            background: rgba(220, 38, 38, 0.1);
-            color: var(--destructive);
-            border-color: var(--destructive);
-        }
-
-        .btn-danger:hover {
-            background: rgba(220, 38, 38, 0.2);
-        }
-
-        .loading {
-            text-align: center;
-            padding: 3rem;
-        }
-
-        .spinner {
-            width: 32px;
-            height: 32px;
-            border: 2px solid var(--border);
-            border-top: 2px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1rem;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .admin-container {
-                flex-direction: column;
-            }
-            
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: static;
-                order: 2;
-            }
-            
-            .main-content {
-                order: 1;
-                padding: 1rem;
-                max-width: 100%;
-            }
-            
-            .content-header {
-                flex-direction: column;
-                gap: 1rem;
-                align-items: flex-start;
-            }
-            
-            .user-welcome {
-                align-self: flex-end;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            }
-
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .quick-actions {
-                justify-content: center;
-            }
-
-            .program-item {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .content-title {
-                font-size: 1.5rem;
-            }
-
-            .stat-card {
-                padding: 1rem;
-            }
-
-            .form-card {
-                padding: 1rem;
-            }
-        }
-    </style>
+    <title>Admin Dashboard - Program Directory</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body>
-    <div class="admin-container">
-        <!-- Sidebar -->
-        <div class="sidebar">
+    <div class="admin-layout">
+        <aside class="sidebar">
             <div class="sidebar-header">
-                <div class="admin-info">
-                    <div class="admin-avatar" id="adminAvatar">👤</div>
-                    <div class="admin-details">
-                        <h3 id="adminUsername">Loading...</h3>
-                        <p>Administrator</p>
-                    </div>
-                </div>
-            </div>
-            
-            <nav>
-                <ul class="nav-menu">
-                    <li class="nav-item">
-                        <button class="nav-link active" onclick="showSection('dashboard')">
-                            <span class="nav-icon">📊</span>
-                            Dashboard
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" onclick="showSection('programs')">
-                            <span class="nav-icon">📦</span>
-                            Add Programs
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" onclick="showSection('manage-programs')">
-                            <span class="nav-icon">⚙️</span>
-                            Manage Programs
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" onclick="showSection('announcements')">
-                            <span class="nav-icon">📢</span>
-                            Announcements
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">
-                            <span class="nav-icon">🏪</span>
-                            View Marketplace
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-            
-            <div class="sidebar-footer">
-                <button class="logout-btn" onclick="logout()">
-                    🚪 Logout
+                <h2>Admin Panel</h2>
+                <button id="logoutBtn" class="logout-btn">
+                    <i data-feather="log-out"></i>
+                    Logout
                 </button>
             </div>
-        </div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="dashboard">
+                    <i data-feather="home"></i>
+                    Dashboard
+                </button>
+                <button class="nav-item" data-tab="programs-add">
+                    <i data-feather="plus"></i>
+                    Programs Add
+                </button>
+                <button class="nav-item" data-tab="programs-edit">
+                    <i data-feather="edit"></i>
+                    Programs Edit
+                </button>
+            </nav>
+        </aside>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Dashboard Section -->
-            <div id="dashboard" class="content-section active">
-                <div class="content-header">
-                    <div>
-                        <h1 class="content-title">Dashboard</h1>
-                        <p class="content-description">Overview of your marketplace statistics and analytics</p>
-                    </div>
-                    <div class="user-welcome">
-                        <div class="user-avatar" id="headerAdminAvatar">👤</div>
-                        <div>
-                            <div style="font-weight: 600; color: var(--foreground);" id="headerAdminUsername">Admin</div>
-                            <div style="font-size: 0.875rem;">Administrator</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon">📦</div>
-                        <div class="stat-value" id="programCount">0</div>
-                        <div class="stat-label">Total Programs</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">📢</div>
-                        <div class="stat-value" id="announcementCount">0</div>
-                        <div class="stat-label">Announcements</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">👁️</div>
-                        <div class="stat-value" id="totalVisitors">0</div>
-                        <div class="stat-label">Total Visitors</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">👥</div>
-                        <div class="stat-value">3</div>
-                        <div class="stat-label">Admin Users</div>
-                    </div>
-                </div>
-                
-                <div class="quick-actions">
-                    <button class="quick-btn" onclick="showSection('programs')">
-                        ➕ Add Program
+        <main class="admin-main">
+            <header class="admin-header">
+                <h1 id="pageTitle">Dashboard</h1>
+                <div class="header-actions">
+                    <button id="refreshDashboard" class="refresh-btn">
+                        <i data-feather="refresh-cw"></i>
+                        Refresh
                     </button>
-                    <button class="quick-btn" onclick="showSection('announcements')">
-                        📢 Add Announcement
-                    </button>
-                    <a class="quick-btn" href="/" target="_blank">
-                        👁️ View Site
+                    <a href="index.html" class="back-btn">
+                        <i data-feather="arrow-left"></i>
+                        Back to Site
                     </a>
                 </div>
-            </div>
+            </header>
 
-            <!-- Programs Section -->
-            <div id="programs" class="content-section">
-                <div class="content-header">
-                    <div>
-                        <h1 class="content-title">Add New Program</h1>
-                        <p class="content-description">Create a new program listing for the marketplace</p>
-                    </div>
-                    <div class="user-welcome">
-                        <div class="user-avatar" id="programsAdminAvatar">👤</div>
-                        <div>
-                            <div style="font-weight: 600; color: var(--foreground);" id="programsAdminUsername">Admin</div>
-                            <div style="font-size: 0.875rem;">Administrator</div>
+            <div class="admin-content">
+                <!-- Dashboard Tab -->
+                <div id="dashboard" class="tab-content active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i data-feather="users"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="activeUsers">0</h3>
+                                <p>Active Users</p>
+                            </div>
                         </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i data-feather="folder"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="totalPrograms">0</h3>
+                                <p>Total Programs</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="recent-activity">
+                        <h3>System Status</h3>
+                        <div class="activity-list">
+                            <div class="activity-item">
+                                <i data-feather="check-circle"></i>
+                                <span>System operational</span>
+                                <small id="lastUpdate">Just now</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Programs Add Tab -->
+                <div id="programs-add" class="tab-content">
+                    <div class="form-container">
+                        <h3>Add New Program</h3>
+                        <form id="addProgramForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="title">Program Title *</label>
+                                    <input type="text" id="title" name="title" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="price">Price</label>
+                                    <select id="price" name="price">
+                                        <option value="FREE">FREE</option>
+                                        <option value="9.99">$9.99</option>
+                                        <option value="19.99">$19.99</option>
+                                        <option value="29.99">$29.99</option>
+                                        <option value="49.99">$49.99</option>
+                                        <option value="99.99">$99.99</option>
+                                        <option value="custom">Custom</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div id="customPriceGroup" class="form-group" style="display: none;">
+                                <label for="customPrice">Custom Price</label>
+                                <input type="number" id="customPrice" name="customPrice" step="0.01" min="0">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="shortDescription">Short Description *</label>
+                                <textarea id="shortDescription" name="shortDescription" rows="3" required></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="fullDescription">Full Description *</label>
+                                <textarea id="fullDescription" name="fullDescription" rows="6" required></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="mediaLink">Image/Video Link</label>
+                                <input type="url" id="mediaLink" name="mediaLink" placeholder="https://example.com/image.jpg">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contactInfo">Contact Information *</label>
+                                <input type="text" id="contactInfo" name="contactInfo" placeholder="email@example.com or phone number" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="programPassword">Program Password (Optional)</label>
+                                <input type="password" id="programPassword" name="programPassword" placeholder="Leave empty for public access">
+                            </div>
+
+                            <div id="addProgramError" class="error-message" style="display: none;"></div>
+                            <div id="addProgramSuccess" class="success-message" style="display: none;"></div>
+
+                            <button type="submit" class="submit-btn">
+                                <i data-feather="plus"></i>
+                                Create Program
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Programs Edit Tab -->
+                <div id="programs-edit" class="tab-content">
+                    <div class="programs-manager">
+                        <h3>Manage Programs</h3>
+                        <div id="programsEditList" class="programs-edit-list">
+                            <!-- Programs will be loaded here -->
+                        </div>
+                        <div id="editEmptyState" class="empty-state" style="display: none;">
+                            <i data-feather="folder"></i>
+                            <h4>No Programs to Edit</h4>
+                            <p>Create your first program using the "Programs Add" tab.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Program Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>Edit Program</h3>
+                <button id="closeEditModal" class="close-btn">
+                    <i data-feather="x"></i>
+                </button>
+            </div>
+            <form id="editProgramForm">
+                <input type="hidden" id="editProgramId" name="programId">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editTitle">Program Title *</label>
+                        <input type="text" id="editTitle" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editPrice">Price</label>
+                        <select id="editPrice" name="price">
+                            <option value="FREE">FREE</option>
+                            <option value="9.99">$9.99</option>
+                            <option value="19.99">$19.99</option>
+                            <option value="29.99">$29.99</option>
+                            <option value="49.99">$49.99</option>
+                            <option value="99.99">$99.99</option>
+                            <option value="custom">Custom</option>
+                        </select>
                     </div>
                 </div>
                 
-                <div class="form-card">
-                    <form id="programForm">
-                        <div id="programMessage"></div>
-                        
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label class="form-label" for="programName">Program Name *</label>
-                                <input type="text" id="programName" class="form-input" placeholder="Enter program name" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="programCategory">Category *</label>
-                                <select id="programCategory" class="form-select" required>
-                                    <option value="">Select category</option>
-                                    <option value="rats">RATs</option>
-                                    <option value="crypters">Crypters</option>
-                                    <option value="malware">Malware</option>
-                                    <option value="cracked">Cracked</option>
-                                    <option value="rces">RCEs</option>
-                                    <option value="antirce">Anti-RCE</option>
-                                    <option value="tools">Tools</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label class="form-label" for="programPrice">Price ($) *</label>
-                                <input type="number" id="programPrice" class="form-input" placeholder="0.00" min="0" step="0.01" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="contactUsername">Contact Username *</label>
-                                <input type="text" id="contactUsername" class="form-input" placeholder="Your contact username" required>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label" for="imageUrl">Image URL (Optional)</label>
-                            <input type="url" id="imageUrl" class="form-input" placeholder="https://example.com/image.jpg">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label" for="downloadUrl">Download URL *</label>
-                            <input type="url" id="downloadUrl" class="form-input" placeholder="https://example.com/download" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label" for="shortDescription">Description *</label>
-                            <textarea id="shortDescription" class="form-textarea" placeholder="Program description..." required></textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label" for="customMessage">Custom Contact Message</label>
-                            <textarea id="customMessage" class="form-textarea" placeholder="Custom message for buyers..."></textarea>
-                        </div>
-                        
-                        <button type="submit" class="submit-btn">
-                            Add Program
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Manage Programs Section -->
-            <div id="manage-programs" class="content-section">
-                <div class="content-header">
-                    <div>
-                        <h1 class="content-title">Manage Programs</h1>
-                        <p class="content-description">Edit or remove existing program listings</p>
-                    </div>
-                    <div class="user-welcome">
-                        <div class="user-avatar" id="manageAdminAvatar">👤</div>
-                        <div>
-                            <div style="font-weight: 600; color: var(--foreground);" id="manageAdminUsername">Admin</div>
-                            <div style="font-size: 0.875rem;">Administrator</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-card">
-                    <div id="manageProgramsContainer">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            <p>Loading programs...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Announcements Section -->
-            <div id="announcements" class="content-section">
-                <div class="content-header">
-                    <div>
-                        <h1 class="content-title">Announcements</h1>
-                        <p class="content-description">Manage marketplace announcements and updates</p>
-                    </div>
-                    <div class="user-welcome">
-                        <div class="user-avatar" id="announcementsAdminAvatar">👤</div>
-                        <div>
-                            <div style="font-weight: 600; color: var(--foreground);" id="announcementsAdminUsername">Admin</div>
-                            <div style="font-size: 0.875rem;">Administrator</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-card">
-                    <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1.5rem;">Add New Announcement</h3>
-                    <form id="announcementForm">
-                        <div id="announcementMessage"></div>
-                        
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label class="form-label" for="announcementTitle">Title *</label>
-                                <input type="text" id="announcementTitle" class="form-input" placeholder="Enter announcement title" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="announcementPriority">Priority</label>
-                                <select id="announcementPriority" class="form-select">
-                                    <option value="normal">Normal</option>
-                                    <option value="high">High</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label" for="announcementMessageText">Message *</label>
-                            <textarea id="announcementMessageText" class="form-textarea" placeholder="Enter announcement message..." required></textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label" for="announcementAuthor">Author</label>
-                            <input type="text" id="announcementAuthor" class="form-input" placeholder="Your name">
-                        </div>
-                        
-                        <button type="submit" class="submit-btn">
-                            Publish Announcement
-                        </button>
-                    </form>
+                <div id="editCustomPriceGroup" class="form-group" style="display: none;">
+                    <label for="editCustomPrice">Custom Price</label>
+                    <input type="number" id="editCustomPrice" name="customPrice" step="0.01" min="0">
                 </div>
 
-                <div class="form-card">
-                    <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1.5rem;">Recent Announcements</h3>
-                    <div id="recentAnnouncements">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            <p>Loading announcements...</p>
-                        </div>
-                    </div>
+                <div class="form-group">
+                    <label for="editShortDescription">Short Description *</label>
+                    <textarea id="editShortDescription" name="shortDescription" rows="3" required></textarea>
                 </div>
-            </div>
+
+                <div class="form-group">
+                    <label for="editFullDescription">Full Description *</label>
+                    <textarea id="editFullDescription" name="fullDescription" rows="6" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="editMediaLink">Image/Video Link</label>
+                    <input type="url" id="editMediaLink" name="mediaLink">
+                </div>
+
+                <div class="form-group">
+                    <label for="editContactInfo">Contact Information *</label>
+                    <input type="text" id="editContactInfo" name="contactInfo" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="editProgramPassword">Program Password (Optional)</label>
+                    <input type="password" id="editProgramPassword" name="programPassword" placeholder="Leave empty to keep current or remove password">
+                </div>
+
+                <div id="editProgramError" class="error-message" style="display: none;"></div>
+                <div id="editProgramSuccess" class="success-message" style="display: none;"></div>
+
+                <div class="modal-actions">
+                    <button type="button" id="deleteProgramBtn" class="delete-btn">
+                        <i data-feather="trash-2"></i>
+                        Delete Program
+                    </button>
+                    <button type="submit" class="submit-btn">
+                        <i data-feather="save"></i>
+                        Update Program
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <script>
-        // Get API base URL for deployment
-        function getApiBaseUrl() {
-            const hostname = window.location.hostname;
-            if (hostname.includes('vercel.app') || hostname.includes('ratplaces.vercel.app')) {
-                return 'https://ratplaces.vercel.app/api';
-            } else if (hostname.includes('ratplace.online')) {
-                return 'https://ratplace.online/api';
-            } else {
-                return '/api';
-            }
-        }
-
-        // API Request function with authentication
-        async function apiRequest(url, options = {}) {
-            try {
-                const fullUrl = url.startsWith('http') ? url : getApiBaseUrl() + url;
-                const token = localStorage.getItem('adminToken');
-                const headers = {
-                    'Content-Type': 'application/json',
-                    ...options.headers
-                };
-                
-                if (token) {
-                    headers['Authorization'] = `Bearer ${token}`;
-                }
-                
-                const response = await fetch(fullUrl, {
-                    headers,
-                    ...options
-                });
-
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        localStorage.removeItem('adminToken');
-                        localStorage.removeItem('adminData');
-                        window.location.href = '/';
-                        return;
-                    }
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                return await response.json();
-            } catch (error) {
-                console.error('API request failed:', error);
-                return { success: false, error: error.message };
-            }
-        }
-
-        // Navigation
-        function showSection(sectionId) {
-            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-            const targetButton = document.querySelector(`[onclick="showSection('${sectionId}')"]`);
-            if (targetButton) {
-                targetButton.classList.add('active');
-            }
-
-            document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-            const targetSection = document.getElementById(sectionId);
-            if (targetSection) {
-                targetSection.classList.add('active');
-            }
-
-            // Load data when switching sections
-            switch(sectionId) {
-                case 'dashboard':
-                    refreshDashboard();
-                    break;
-                case 'manage-programs':
-                    loadManagePrograms();
-                    break;
-                case 'announcements':
-                    loadRecentAnnouncements();
-                    break;
-            }
-        }
-
-        // Dashboard Functions
-        async function loadDashboardStats() {
-            try {
-                const programsResponse = await apiRequest('/programs');
-                if (programsResponse && (programsResponse.success !== false)) {
-                    const programs = Array.isArray(programsResponse) ? programsResponse : (programsResponse.data || []);
-                    document.getElementById('programCount').textContent = programs.length;
-                }
-
-                // Load real announcements count
-                loadRecentAnnouncements();
-                
-                // Load analytics if available
-                loadAnalytics();
-            } catch (error) {
-                console.error('Error loading dashboard stats:', error);
-            }
-        }
-
-        // Program Management
-        async function loadManagePrograms() {
-            try {
-                const response = await apiRequest('/programs');
-                if (response && (response.success !== false)) {
-                    const programs = Array.isArray(response) ? response : (response.data || []);
-                    displayManagePrograms(programs);
-                } else {
-                    showError('manageProgramsContainer', 'Failed to load programs');
-                }
-            } catch (error) {
-                showError('manageProgramsContainer', 'Failed to load programs');
-            }
-        }
-
-        function displayManagePrograms(programs) {
-            const container = document.getElementById('manageProgramsContainer');
-            if (!programs || programs.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 2rem;">No programs found</p>';
-                return;
-            }
-
-            const html = `
-                <div class="programs-list">
-                    ${programs.map(program => `
-                        <div class="program-item">
-                            <div class="program-info">
-                                <h4>${escapeHtml(program.name)}</h4>
-                                <div class="program-meta">
-                                    <span>Category: ${escapeHtml(program.category)}</span>
-                                    <span>Price: $${program.price}</span>
-                                    <span>Contact: ${escapeHtml(program.contactUsername)}</span>
-                                </div>
-                                <div class="program-description">
-                                    ${escapeHtml(program.description || program.customMessage || 'No description')}
-                                </div>
-                            </div>
-                            <div class="program-actions">
-                                <button class="btn-sm btn-outline" onclick="editProgram('${program.id}')">
-                                    Edit
-                                </button>
-                                <button class="btn-sm btn-danger" onclick="deleteProgram('${program.id}')">
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            container.innerHTML = html;
-        }
-
-        async function deleteProgram(programId) {
-            if (!confirm('Are you sure you want to delete this program? This action cannot be undone.')) {
-                return;
-            }
-
-            try {
-                const response = await apiRequest(`/programs/${programId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    }
-                });
-
-                if (response.success) {
-                    showMessage('manageProgramsContainer', 'Program deleted successfully!', 'success');
-                    setTimeout(() => loadManagePrograms(), 1000);
-                } else {
-                    showMessage('manageProgramsContainer', response.message || 'Failed to delete program', 'error');
-                }
-            } catch (error) {
-                showMessage('manageProgramsContainer', 'Failed to delete program', 'error');
-            }
-        }
-
-        function editProgram(programId) {
-            // Find the program to edit
-            const programsResponse = apiRequest('/programs').then(response => {
-                const programs = Array.isArray(response) ? response : (response.data || []);
-                const program = programs.find(p => p.id === programId);
-                if (program) {
-                    // Pre-fill the add program form with existing data
-                    document.getElementById('programName').value = program.name;
-                    document.getElementById('programCategory').value = program.category;
-                    document.getElementById('programPrice').value = program.price;
-                    document.getElementById('contactUsername').value = program.contactUsername;
-                    document.getElementById('imageUrl').value = program.imageUrl || '';
-                    document.getElementById('downloadUrl').value = program.downloadUrl;
-                    document.getElementById('shortDescription').value = program.description;
-                    document.getElementById('customMessage').value = program.customMessage || '';
-                    
-                    // Switch to the add programs section
-                    showSection('programs');
-                    
-                    // Scroll to form
-                    document.getElementById('programForm').scrollIntoView({ behavior: 'smooth' });
-                    
-                    showMessage('programMessage', `Editing "${program.name}" - make your changes and submit to update`, 'success');
-                }
-            });
-        }
-
-        // Announcements Management
-        async function loadRecentAnnouncements() {
-            try {
-                const response = await apiRequest('/announcements', {
-                    method: 'GET'
-                });
-                
-                if (response && response.success !== false) {
-                    const announcements = Array.isArray(response) ? response : (response.data || []);
-                    displayRecentAnnouncements(announcements);
-                    
-                    // Update dashboard count
-                    document.getElementById('announcementCount').textContent = announcements.length;
-                } else {
-                    displayRecentAnnouncements([]);
-                }
-            } catch (error) {
-                showError('recentAnnouncements', 'Failed to load announcements');
-            }
-        }
-
-        function displayRecentAnnouncements(announcements) {
-            const container = document.getElementById('recentAnnouncements');
-            if (!announcements || announcements.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 2rem;">No announcements found</p>';
-                return;
-            }
-
-            const html = announcements.slice(0, 5).map(announcement => `
-                <div class="announcement ${announcement.priority === 'high' ? 'priority-high' : ''}" style="margin-bottom: 1rem; background: var(--background); border-radius: 8px; padding: 1.5rem; border: 1px solid var(--border); border-left: 4px solid ${announcement.priority === 'high' ? 'var(--destructive)' : 'var(--primary)'};">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <div style="font-weight: 600;">${escapeHtml(announcement.title)}</div>
-                        <div style="font-size: 0.75rem; color: var(--muted);">${formatDate(announcement.createdAt)}</div>
-                    </div>
-                    <div style="color: var(--muted); line-height: 1.6; font-size: 0.875rem;">${escapeHtml(announcement.message)}</div>
-                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; font-size: 0.75rem; color: var(--muted);">
-                        ${announcement.authorAvatarUrl ? 
-                            `<img src="${announcement.authorAvatarUrl}" alt="${escapeHtml(announcement.author)}" style="width: 20px; height: 20px; border-radius: 50%;">` : 
-                            `<span>${announcement.authorAvatar || '📝'}</span>`
-                        }
-                        <span>${escapeHtml(announcement.author || 'Admin')}</span>
-                    </div>
-                </div>
-            `).join('');
-            
-            container.innerHTML = html;
-        }
-
-        // Form Handlers
-        function setupForms() {
-            // Program Form
-            document.getElementById('programForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const formData = {
-                    name: document.getElementById('programName').value,
-                    category: document.getElementById('programCategory').value,
-                    price: document.getElementById('programPrice').value,
-                    contactUsername: document.getElementById('contactUsername').value,
-                    imageUrl: document.getElementById('imageUrl').value,
-                    downloadUrl: document.getElementById('downloadUrl').value,
-                    description: document.getElementById('shortDescription').value,
-                    customMessage: document.getElementById('customMessage').value
-                };
-
-                try {
-                    const response = await apiRequest('/programs', {
-                        method: 'POST',
-                        body: JSON.stringify(formData)
-                    });
-
-                    if (response.success || response.data) {
-                        showMessage('programMessage', 'Program added successfully!', 'success');
-                        document.getElementById('programForm').reset();
-                        loadDashboardStats();
-                    } else {
-                        showMessage('programMessage', response.message || 'Failed to add program', 'error');
-                    }
-                } catch (error) {
-                    showMessage('programMessage', 'Failed to add program', 'error');
-                }
-            });
-
-            // Announcement Form
-            document.getElementById('announcementForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const formData = {
-                    title: document.getElementById('announcementTitle').value,
-                    message: document.getElementById('announcementMessageText').value,
-                    priority: document.getElementById('announcementPriority').value
-                };
-
-                try {
-                    const response = await apiRequest('/announcements', {
-                        method: 'POST',
-                        body: JSON.stringify(formData)
-                    });
-
-                    if (response.success) {
-                        showMessage('announcementMessage', 'Announcement published successfully!', 'success');
-                        document.getElementById('announcementForm').reset();
-                        loadRecentAnnouncements();
-                    } else {
-                        showMessage('announcementMessage', response.message || 'Failed to publish announcement', 'error');
-                    }
-                } catch (error) {
-                    showMessage('announcementMessage', 'Failed to publish announcement', 'error');
-                }
-            });
-        }
-
-        // Utility Functions
-        function escapeHtml(text) {
-            if (!text) return '';
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return text.replace(/[&<>"']/g, m => map[m]);
-        }
-
-        function formatDate(dateString) {
-            if (!dateString) return 'Unknown';
-            try {
-                const date = new Date(dateString);
-                return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            } catch {
-                return 'Unknown';
-            }
-        }
-
-        function showMessage(containerId, message, type) {
-            const container = document.getElementById(containerId);
-            const messageHtml = `<div class="message ${type}">${message}</div>`;
-            
-            if (container.querySelector('.message')) {
-                container.querySelector('.message').remove();
-            }
-            
-            container.insertAdjacentHTML('afterbegin', messageHtml);
-            
-            setTimeout(() => {
-                const messageEl = container.querySelector('.message');
-                if (messageEl) messageEl.remove();
-            }, 5000);
-        }
-
-        function showError(containerId, message) {
-            const container = document.getElementById(containerId);
-            container.innerHTML = `
-                <div style="text-align: center; padding: 2rem;">
-                    <p style="color: var(--destructive);">${message}</p>
-                </div>
-            `;
-        }
-
-        // Authentication
-        function logout() {
-            if (confirm('Are you sure you want to logout?')) {
-                localStorage.removeItem('adminToken');
-                localStorage.removeItem('adminData');
-                localStorage.removeItem('isLoggedIn');
-                // Clear any other session data
-                sessionStorage.clear();
-                // Redirect to main page
-                window.location.href = '/?logout=1';
-            }
-        }
-
-        function checkAuth() {
-            const token = localStorage.getItem('adminToken');
-            const adminData = localStorage.getItem('adminData');
-            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-            
-            // Check if we have basic login markers
-            if (!token || !adminData || !isLoggedIn) {
-                // Clear any corrupted data
-                localStorage.removeItem('adminToken');
-                localStorage.removeItem('adminData');
-                localStorage.removeItem('isLoggedIn');
-                // Redirect to main page to login
-                window.location.href = '/?needsLogin=1';
-                return false;
-            }
-            
-            try {
-                const data = JSON.parse(adminData);
-                
-                // Check if we have required user data
-                if (!data.username) {
-                    throw new Error('Invalid session data');
-                }
-                
-                // Check session expiration
-                const expiresAt = data.expiresAt || (new Date(data.loginTime).getTime() + (24 * 60 * 60 * 1000));
-                
-                // Auto-logout if session expired
-                if (Date.now() > expiresAt) {
-                    console.log('Session expired, logging out');
-                    logout();
-                    return false;
-                }
-                
-                return true;
-            } catch (error) {
-                console.error('Auth check failed:', error);
-                // Invalid data format, clear and redirect
-                localStorage.removeItem('adminToken');
-                localStorage.removeItem('adminData');
-                localStorage.removeItem('isLoggedIn');
-                window.location.href = '/?needsLogin=1';
-                return false;
-            }
-        }
-
-        // Update all user displays
-        function updateUserDisplays() {
-            const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
-            if (adminData.username) {
-                // Sidebar displays
-                document.getElementById('adminUsername').textContent = adminData.username;
-                document.getElementById('adminAvatar').textContent = adminData.avatar || '👤';
-                
-                // Header displays in all sections
-                const headerElements = [
-                    'headerAdminUsername', 'programsAdminUsername', 
-                    'manageAdminUsername', 'announcementsAdminUsername'
-                ];
-                const avatarElements = [
-                    'headerAdminAvatar', 'programsAdminAvatar', 
-                    'manageAdminAvatar', 'announcementsAdminAvatar'
-                ];
-                
-                headerElements.forEach(id => {
-                    const element = document.getElementById(id);
-                    if (element) element.textContent = adminData.username;
-                });
-                
-                avatarElements.forEach(id => {
-                    const element = document.getElementById(id);
-                    if (element) element.textContent = adminData.avatar || '👤';
-                });
-            }
-        }
-
-        // Initialize Application
-        document.addEventListener('DOMContentLoaded', () => {
-            // First check authentication - this will redirect if not logged in
-            if (!checkAuth()) return;
-            
-            // Update all user displays
-            updateUserDisplays();
-
-            setupForms();
-            loadDashboardStats();
-        });
-        
-        // Also check auth when page becomes visible (tab switching)
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                checkAuth();
-            }
-        });
-        
-        // Load analytics data
-        async function loadAnalytics() {
-            try {
-                const response = await apiRequest('/analytics', {
-                    method: 'GET'
-                });
-                
-                if (response && response.success !== false) {
-                    const data = response.data || response;
-                    if (data.visitors) {
-                        document.getElementById('totalVisitors').textContent = data.visitors.total || '0';
-                    }
-                }
-            } catch (error) {
-                document.getElementById('totalVisitors').textContent = '0';
-            }
-        }
-        
-        // Refresh data when switching to dashboard
-        function refreshDashboard() {
-            loadDashboardStats();
-            loadRecentAnnouncements();
-            loadAnalytics();
-        }
-    </script>
+    <script src="scripts/admin.js"></script>
 </body>
 </html>
