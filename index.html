@@ -4,7 +4,395 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Program Directory</title>
-    <link rel="stylesheet" href="styles/main.css">
+    <style>
+/* Reset and Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-primary: #0f0f0f;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #2a2a2a;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-muted: #666666;
+  --accent-primary: #3b82f6;
+  --accent-secondary: #1d4ed8;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --border: #333333;
+  --border-light: #404040;
+  --shadow: rgba(0, 0, 0, 0.5);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Header */
+.header {
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+}
+
+.admin-btn, .back-btn {
+  background-color: var(--accent-primary);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.admin-btn:hover, .back-btn:hover {
+  background-color: var(--accent-secondary);
+}
+
+/* Main Content */
+.main {
+  flex: 1;
+  padding: 2rem 0;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.hero h2 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, var(--accent-primary), #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero p {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Programs Section */
+.programs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.programs-header h3 {
+  font-size: 1.8rem;
+}
+
+.refresh-btn {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.refresh-btn:hover {
+  background-color: var(--border);
+}
+
+.programs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.program-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.program-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px var(--shadow);
+}
+
+.program-card h4 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  color: var(--accent-primary);
+}
+
+.program-card .price {
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background-color: var(--bg-tertiary);
+}
+
+.program-card .price.free {
+  background-color: var(--success);
+  color: white;
+}
+
+.program-card p {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.program-card .contact {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Empty State */
+.empty-state, .error-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+}
+
+.empty-state i, .error-state i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-state h4, .error-state h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal.show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideIn 0.3s ease;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Forms */
+form {
+  padding: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.submit-btn {
+  background-color: var(--accent-primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.submit-btn:hover {
+  background-color: var(--accent-secondary);
+}
+
+/* Messages */
+.error-message {
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--error);
+  color: var(--error);
+}
+
+/* Footer */
+.footer {
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 0;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .programs-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .hero h2 {
+    font-size: 2rem;
+  }
+  
+  .modal-content {
+    width: 95%;
+    margin: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header .container {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .programs-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+}
+    </style>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.css" rel="stylesheet">
     <script src="https://unpkg.com/feather-icons"></script>
 </head>
@@ -79,6 +467,140 @@
         </div>
     </div>
 
-    <script src="scripts/main.js"></script>
+    <script>
+// Main JavaScript for index.html
+document.addEventListener('DOMContentLoaded', function() {
+    feather.replace();
+    loadPrograms();
+    
+    // Event listeners
+    document.getElementById('adminLoginBtn').addEventListener('click', showLoginModal);
+    document.getElementById('closeModal').addEventListener('click', hideLoginModal);
+    document.getElementById('loginForm').addEventListener('submit', handleLogin);
+    document.getElementById('refreshBtn').addEventListener('click', loadPrograms);
+    
+    // Close modal when clicking outside
+    document.getElementById('loginModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            hideLoginModal();
+        }
+    });
+});
+
+async function loadPrograms() {
+    try {
+        const response = await fetch('/api/programs');
+        if (!response.ok) {
+            throw new Error('Failed to load programs');
+        }
+        
+        const programs = await response.json();
+        displayPrograms(programs);
+    } catch (error) {
+        console.error('Error loading programs:', error);
+        showEmptyState();
+    }
+}
+
+function displayPrograms(programs) {
+    const programsList = document.getElementById('programsList');
+    const emptyState = document.getElementById('emptyState');
+    
+    if (programs.length === 0) {
+        showEmptyState();
+        return;
+    }
+    
+    emptyState.style.display = 'none';
+    
+    programsList.innerHTML = programs.map(program => {
+        const priceDisplay = program.price === 'FREE' ? 'FREE' : `$${program.price}`;
+        const hasPassword = program.password ? ' 🔒' : '';
+        
+        return `
+            <div class="program-card" onclick="viewProgram('${program.id}')">
+                <h4>${escapeHtml(program.title)}${hasPassword}</h4>
+                <span class="price ${program.price === 'FREE' ? 'free' : ''}">${priceDisplay}</span>
+                <p>${escapeHtml(program.shortDescription)}</p>
+                <div class="contact">
+                    <i data-feather="mail"></i>
+                    <span>${escapeHtml(program.contactInfo)}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    feather.replace();
+}
+
+function showEmptyState() {
+    document.getElementById('programsList').innerHTML = '';
+    document.getElementById('emptyState').style.display = 'block';
+    feather.replace();
+}
+
+function viewProgram(id) {
+    window.location.href = `program.html?id=${id}`;
+}
+
+function showLoginModal() {
+    document.getElementById('loginModal').classList.add('show');
+    document.getElementById('loginModal').style.display = 'flex';
+    document.getElementById('username').focus();
+}
+
+function hideLoginModal() {
+    document.getElementById('loginModal').classList.remove('show');
+    document.getElementById('loginModal').style.display = 'none';
+    document.getElementById('loginForm').reset();
+    document.getElementById('loginError').style.display = 'none';
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const loginData = {
+        username: formData.get('username'),
+        password: formData.get('password')
+    };
+    
+    const errorDiv = document.getElementById('loginError');
+    
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(loginData)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Store session token
+            localStorage.setItem('adminToken', result.token);
+            localStorage.setItem('adminUser', JSON.stringify(result.user));
+            
+            // Redirect to admin panel
+            window.location.href = 'admin.html';
+        } else {
+            errorDiv.textContent = result.error || 'Login failed';
+            errorDiv.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        errorDiv.textContent = 'Network error. Please try again.';
+        errorDiv.style.display = 'block';
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+    </script>
 </body>
 </html>
