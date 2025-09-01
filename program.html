@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Program Details - Program Directory</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">Program Directory</h1>
+            <a href="index.html" class="back-btn">
+                <i data-feather="arrow-left"></i>
+                Back to Home
+            </a>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <div id="programDetails" class="program-details">
+                <!-- Program details will be loaded here -->
+            </div>
+            
+            <div id="programNotFound" class="error-state" style="display: none;">
+                <i data-feather="alert-circle"></i>
+                <h3>Program Not Found</h3>
+                <p>The requested program could not be found or may have been removed.</p>
+                <a href="index.html" class="submit-btn">
+                    <i data-feather="home"></i>
+                    Return Home
+                </a>
+            </div>
+
+            <div id="accessDenied" class="error-state" style="display: none;">
+                <i data-feather="lock"></i>
+                <h3>Access Required</h3>
+                <p>This program requires a password to access.</p>
+                <form id="passwordForm" class="password-form">
+                    <div class="form-group">
+                        <label for="programPassword">Enter Password</label>
+                        <input type="password" id="programPassword" name="password" required>
+                    </div>
+                    <div id="passwordError" class="error-message" style="display: none;"></div>
+                    <button type="submit" class="submit-btn">
+                        <i data-feather="unlock"></i>
+                        Access Program
+                    </button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Program Directory. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Get program ID from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const programId = urlParams.get('id');
+        const providedPassword = urlParams.get('password');
+
+        // Initialize feather icons
+        document.addEventListener('DOMContentLoaded', function() {
+            feather.replace();
+            if (programId) {
+                loadProgramDetails(programId, providedPassword);
+            } else {
+                showProgramNotFound();
+            }
+        });
+
+        async function loadProgramDetails(id, password = null) {
+            try {
+                const response = await fetch(`/api/programs/${id}${password ? `?password=${encodeURIComponent(password)}` : ''}`);
+                
+                if (response.status === 401) {
+                    showAccessDenied();
+                    return;
+                }
+                
+                if (!response.ok) {
+                    showProgramNotFound();
+                    return;
+                }
+
+                const program = await response.json();
+                displayProgramDetails(program);
+            } catch (error) {
+                console.error('Error loading program:', error);
+                showProgramNotFound();
+            }
+        }
+
+        function displayProgramDetails(program) {
+            const detailsContainer = document.getElementById('programDetails');
+            const priceDisplay = program.price === 'FREE' ? 'FREE' : `$${program.price}`;
+            
+            detailsContainer.innerHTML = `
+                <div class="program-header">
+                    <div class="program-meta">
+                        <h1>${escapeHtml(program.title)}</h1>
+                        <div class="program-price">
+                            <span class="price ${program.price === 'FREE' ? 'free' : ''}">${priceDisplay}</span>
+                        </div>
+                    </div>
+                    ${program.mediaLink ? `
+                        <div class="program-media">
+                            ${program.mediaLink.match(/\.(mp4|webm|ogg)$/i) ? 
+                                `<video controls src="${escapeHtml(program.mediaLink)}" class="media-content"></video>` :
+                                `<img src="${escapeHtml(program.mediaLink)}" alt="${escapeHtml(program.title)}" class="media-content">`
+                            }
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="program-content">
+                    <section class="program-section">
+                        <h3>Overview</h3>
+                        <p class="program-short-desc">${escapeHtml(program.shortDescription)}</p>
+                    </section>
+
+                    <section class="program-section">
+                        <h3>Description</h3>
+                        <div class="program-full-desc">${escapeHtml(program.fullDescription).replace(/\n/g, '<br>')}</div>
+                    </section>
+
+                    <section class="program-section">
+                        <h3>Contact Information</h3>
+                        <div class="contact-info">
+                            <i data-feather="mail"></i>
+                            <span>${escapeHtml(program.contactInfo)}</span>
+                        </div>
+                    </section>
+
+                    <div class="program-actions">
+                        <button onclick="copyProgramLink()" class="action-btn">
+                            <i data-feather="share-2"></i>
+                            Share Program
+                        </button>
+                        <a href="index.html" class="action-btn secondary">
+                            <i data-feather="arrow-left"></i>
+                            Back to Programs
+                        </a>
+                    </div>
+                </div>
+            `;
+            
+            detailsContainer.style.display = 'block';
+            feather.replace();
+        }
+
+        function showProgramNotFound() {
+            document.getElementById('programNotFound').style.display = 'block';
+            feather.replace();
+        }
+
+        function showAccessDenied() {
+            document.getElementById('accessDenied').style.display = 'block';
+            
+            // Handle password form submission
+            document.getElementById('passwordForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const password = document.getElementById('programPassword').value;
+                const errorDiv = document.getElementById('passwordError');
+                
+                try {
+                    const response = await fetch(`/api/programs/${programId}?password=${encodeURIComponent(password)}`);
+                    
+                    if (response.ok) {
+                        const program = await response.json();
+                        document.getElementById('accessDenied').style.display = 'none';
+                        displayProgramDetails(program);
+                    } else {
+                        errorDiv.textContent = 'Incorrect password. Please try again.';
+                        errorDiv.style.display = 'block';
+                    }
+                } catch (error) {
+                    errorDiv.textContent = 'Error verifying password. Please try again.';
+                    errorDiv.style.display = 'block';
+                }
+            });
+            
+            feather.replace();
+        }
+
+        function copyProgramLink() {
+            const url = window.location.href.split('?')[0] + `?id=${programId}`;
+            navigator.clipboard.writeText(url).then(() => {
+                // Simple notification
+                const btn = event.target.closest('.action-btn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i data-feather="check"></i> Copied!';
+                feather.replace();
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    feather.replace();
+                }, 2000);
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
