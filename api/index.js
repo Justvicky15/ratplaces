@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const http = require('http');
 
 // Hardcoded admin users
 const ADMIN_USERS = {
@@ -106,53 +105,32 @@ function loadProgram(id) {
   }
 }
 
-// Function to serve static files
-function serveStaticFile(filePath, res) {
-  try {
-    const fullPath = path.join(process.cwd(), filePath);
-    
-    if (!fs.existsSync(fullPath)) {
-      res.statusCode = 404;
-      res.end('Not Found');
-      return;
-    }
-
-    const ext = path.extname(filePath);
-    const contentTypes = {
-      '.html': 'text/html',
-      '.css': 'text/css',
-      '.js': 'application/javascript',
-      '.json': 'application/json',
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.gif': 'image/gif',
-      '.svg': 'image/svg+xml',
-      '.ico': 'image/x-icon'
-    };
-
-    const contentType = contentTypes[ext] || 'text/plain';
-    const content = fs.readFileSync(fullPath);
-    
-    res.setHeader('Content-Type', contentType);
-    res.statusCode = 200;
-    res.end(content);
-  } catch (error) {
-    console.error('Error serving static file:', error);
-    res.statusCode = 500;
-    res.end('Internal Server Error');
+// Helper function to handle different response objects
+function sendResponse(res, statusCode, data) {
+  if (typeof res.status === 'function') {
+    // Vercel serverless
+    return res.status(statusCode).json(data);
+  } else {
+    // Node.js HTTP
+    res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify(data));
   }
 }
 
-// API Handler
-async function handler(req, res) {
+// Serverless API Handler for Vercel
+module.exports = async (req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    if (typeof res.status === 'function') {
+      return res.status(200).end();
+    } else {
+      res.writeHead(200);
+      return res.end();
+    }
   }
 
   const { url, method } = req;
@@ -185,19 +163,19 @@ async function handler(req, res) {
       const { username, password } = body;
       
       if (!username || !password) {
-        return res.status(400).json({ error: 'Username and password required' });
+        return sendResponse(res, 400, { error: 'Username and password required' });
       }
 
       const user = ADMIN_USERS[username];
       if (!user || user.password !== password) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+        return sendResponse(res, 401, { error: 'Invalid credentials' });
       }
 
       const sessionToken = generateSessionToken();
       sessions.set(sessionToken, { username, loginTime: new Date() });
       activeUsers.add(username);
 
-      return res.status(200).json({ 
+      return sendResponse(res, 200, {
         success: true, 
         token: sessionToken,
         user: { username }
@@ -215,23 +193,23 @@ async function handler(req, res) {
           sessions.delete(token);
         }
       }
-      return res.status(200).json({ success: true });
+      return sendResponse(res, 200, { success: true });
     }
 
     if (pathSegments[1] === 'stats' && method === 'GET') {
       // Get admin statistics
       const authHeader = req.headers.authorization;
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'Authentication required' });
+        return sendResponse(res, 401, { error: 'Authentication required' });
       }
 
       const token = authHeader.substring(7);
       if (!validateSession(token)) {
-        return res.status(401).json({ error: 'Invalid session' });
+        return sendResponse(res, 401, { error: 'Invalid session' });
       }
 
       const programs = loadPrograms();
-      return res.status(200).json({
+      return sendResponse(res, 200, {
         activeUsers: activeUsers.size,
         totalPrograms: programs.length,
         lastUpdate: new Date().toISOString()
@@ -244,7 +222,7 @@ async function handler(req, res) {
         const programs = loadPrograms();
         // Remove password and sensitive info for public listing
         const publicPrograms = programs.map(({ password, ...program }) => program);
-        return res.status(200).json(publicPrograms);
+        return sendResponse(res, 200, publicPrograms);
       }
 
       if (method === 'GET' && pathSegments.length === 3) {
@@ -253,7 +231,7 @@ async function handler(req, res) {
         const program = loadProgram(programId);
         
         if (!program) {
-          return res.status(404).json({ error: 'Program not found' });
+          return sendResponse(res, 404, { error: 'Program not found' });
         }
 
         // Check if program has password protection
@@ -262,31 +240,31 @@ async function handler(req, res) {
           const providedPassword = urlParams.searchParams.get('password');
           
           if (!providedPassword || providedPassword !== program.password) {
-            return res.status(401).json({ error: 'Password required' });
+            return sendResponse(res, 401, { error: 'Password required' });
           }
         }
 
         // Remove password from response
         const { password, ...publicProgram } = program;
-        return res.status(200).json(publicProgram);
+        return sendResponse(res, 200, publicProgram);
       }
 
       if (method === 'POST') {
         // Create new program (admin only)
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-          return res.status(401).json({ error: 'Authentication required' });
+          return sendResponse(res, 401, { error: 'Authentication required' });
         }
 
         const token = authHeader.substring(7);
         if (!validateSession(token)) {
-          return res.status(401).json({ error: 'Invalid session' });
+          return sendResponse(res, 401, { error: 'Invalid session' });
         }
 
         const { title, shortDescription, fullDescription, mediaLink, price, contactInfo, programPassword } = body;
 
         if (!title || !shortDescription || !fullDescription || !contactInfo) {
-          return res.status(400).json({ error: 'Required fields missing' });
+          return sendResponse(res, 400, { error: 'Required fields missing' });
         }
 
         const program = {
@@ -304,9 +282,9 @@ async function handler(req, res) {
 
         if (saveProgram(program)) {
           const { password, ...publicProgram } = program;
-          return res.status(201).json(publicProgram);
+          return sendResponse(res, 201, publicProgram);
         } else {
-          return res.status(500).json({ error: 'Failed to save program' });
+          return sendResponse(res, 500, { error: 'Failed to save program' });
         }
       }
 
@@ -314,25 +292,25 @@ async function handler(req, res) {
         // Update program (admin only)
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-          return res.status(401).json({ error: 'Authentication required' });
+          return sendResponse(res, 401, { error: 'Authentication required' });
         }
 
         const token = authHeader.substring(7);
         if (!validateSession(token)) {
-          return res.status(401).json({ error: 'Invalid session' });
+          return sendResponse(res, 401, { error: 'Invalid session' });
         }
 
         const programId = pathSegments[2];
         const existingProgram = loadProgram(programId);
         
         if (!existingProgram) {
-          return res.status(404).json({ error: 'Program not found' });
+          return sendResponse(res, 404, { error: 'Program not found' });
         }
 
         const { title, shortDescription, fullDescription, mediaLink, price, contactInfo, programPassword } = body;
 
         if (!title || !shortDescription || !fullDescription || !contactInfo) {
-          return res.status(400).json({ error: 'Required fields missing' });
+          return sendResponse(res, 400, { error: 'Required fields missing' });
         }
 
         const updatedProgram = {
@@ -349,9 +327,9 @@ async function handler(req, res) {
 
         if (saveProgram(updatedProgram)) {
           const { password, ...publicProgram } = updatedProgram;
-          return res.status(200).json(publicProgram);
+          return sendResponse(res, 200, publicProgram);
         } else {
-          return res.status(500).json({ error: 'Failed to update program' });
+          return sendResponse(res, 500, { error: 'Failed to update program' });
         }
       }
 
@@ -359,72 +337,29 @@ async function handler(req, res) {
         // Delete program (admin only)
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-          return res.status(401).json({ error: 'Authentication required' });
+          return sendResponse(res, 401, { error: 'Authentication required' });
         }
 
         const token = authHeader.substring(7);
         if (!validateSession(token)) {
-          return res.status(401).json({ error: 'Invalid session' });
+          return sendResponse(res, 401, { error: 'Invalid session' });
         }
 
         const programId = pathSegments[2];
         
         if (deleteProgram(programId)) {
-          return res.status(200).json({ success: true });
+          return sendResponse(res, 200, { success: true });
         } else {
-          return res.status(404).json({ error: 'Program not found' });
+          return sendResponse(res, 404, { error: 'Program not found' });
         }
       }
     }
 
     // Default 404 for unmatched routes
-    return res.status(404).json({ error: 'Route not found' });
+    return sendResponse(res, 404, { error: 'Route not found' });
 
   } catch (error) {
     console.error('API Error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return sendResponse(res, 500, { error: 'Internal server error' });
   }
-}
-
-// Create HTTP server
-const server = http.createServer(async (req, res) => {
-  try {
-    const { url } = req;
-    
-    // Handle API routes
-    if (url.startsWith('/api/')) {
-      await handler(req, res);
-      return;
-    }
-    
-    // Handle static files
-    let filePath = url;
-    
-    // Default to index.html for root
-    if (filePath === '/') {
-      filePath = '/index.html';
-    }
-    
-    // Remove query parameters for file serving
-    filePath = filePath.split('?')[0];
-    
-    // Remove leading slash
-    if (filePath.startsWith('/')) {
-      filePath = filePath.substring(1);
-    }
-    
-    serveStaticFile(filePath, res);
-  } catch (error) {
-    console.error('Server error:', error);
-    res.statusCode = 500;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'Internal server error' }));
-  }
-});
-
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
-module.exports = handler;
+};
