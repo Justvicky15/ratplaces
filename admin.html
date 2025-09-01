@@ -4,7 +4,594 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Program Directory</title>
-    <link rel="stylesheet" href="styles/main.css">
+    <style>
+/* Reset and Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-primary: #0f0f0f;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #2a2a2a;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-muted: #666666;
+  --accent-primary: #3b82f6;
+  --accent-secondary: #1d4ed8;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --border: #333333;
+  --border-light: #404040;
+  --shadow: rgba(0, 0, 0, 0.5);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Admin Layout */
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 250px;
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sidebar-header h2 {
+  margin: 0;
+  color: var(--accent-primary);
+}
+
+.logout-btn {
+  background-color: var(--error);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.logout-btn:hover {
+  background-color: #dc2626;
+}
+
+.sidebar-nav {
+  padding: 1rem 0;
+}
+
+.nav-item {
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 1rem 1.5rem;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.nav-item:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.nav-item.active {
+  background-color: var(--accent-primary);
+  color: white;
+}
+
+.admin-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-header {
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-header h1 {
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.admin-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* Dashboard */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.stat-icon {
+  background-color: var(--accent-primary);
+  color: white;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-info h3 {
+  font-size: 2rem;
+  margin: 0;
+}
+
+.stat-info p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.recent-activity {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.recent-activity h3 {
+  margin-bottom: 1rem;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: var(--bg-tertiary);
+  border-radius: 6px;
+}
+
+.activity-item i {
+  color: var(--success);
+}
+
+.activity-item small {
+  margin-left: auto;
+  color: var(--text-muted);
+}
+
+/* Form Container */
+.form-container {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2rem;
+  max-width: 800px;
+}
+
+.form-container h3 {
+  margin-bottom: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.submit-btn {
+  background-color: var(--accent-primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.submit-btn:hover {
+  background-color: var(--accent-secondary);
+}
+
+/* Programs Manager */
+.programs-manager {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.programs-manager h3 {
+  margin-bottom: 1.5rem;
+}
+
+.programs-edit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.program-edit-item {
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.program-edit-info h4 {
+  margin: 0 0 0.5rem 0;
+  color: var(--accent-primary);
+}
+
+.program-edit-info p {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.program-edit-info .program-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.program-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.edit-btn {
+  background-color: var(--accent-primary);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  transition: background-color 0.2s;
+}
+
+.edit-btn:hover {
+  background-color: var(--accent-secondary);
+}
+
+.refresh-btn {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.refresh-btn:hover {
+  background-color: var(--border);
+}
+
+.back-btn {
+  background-color: var(--accent-primary);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.back-btn:hover {
+  background-color: var(--accent-secondary);
+}
+
+/* Messages */
+.error-message, .success-message {
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.error-message {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--error);
+  color: var(--error);
+}
+
+.success-message {
+  background-color: rgba(16, 185, 129, 0.1);
+  border: 1px solid var(--success);
+  color: var(--success);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+}
+
+.empty-state i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-state h4 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal.show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideIn 0.3s ease;
+}
+
+.modal-content.large {
+  max-width: 700px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.delete-btn {
+  background-color: var(--error);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.delete-btn:hover {
+  background-color: #dc2626;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-layout {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    order: 2;
+  }
+  
+  .admin-main {
+    order: 1;
+  }
+  
+  .sidebar-nav {
+    display: flex;
+    overflow-x: auto;
+    padding: 0;
+  }
+  
+  .nav-item {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  
+  .program-edit-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .program-edit-actions {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+    </style>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.css" rel="stylesheet">
     <script src="https://unpkg.com/feather-icons"></script>
 </head>
@@ -246,6 +833,449 @@
         </div>
     </div>
 
-    <script src="scripts/admin.js"></script>
+    <script>
+// Admin JavaScript for admin.html
+let currentTab = 'dashboard';
+let adminToken = null;
+let programs = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    feather.replace();
+    
+    // Check authentication
+    adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) {
+        window.location.href = 'index.html';
+        return;
+    }
+    
+    // Event listeners
+    setupEventListeners();
+    
+    // Load initial data
+    loadDashboardStats();
+    loadProgramsForEdit();
+});
+
+function setupEventListeners() {
+    // Navigation
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function() {
+            switchTab(this.dataset.tab);
+        });
+    });
+    
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+    
+    // Refresh dashboard
+    document.getElementById('refreshDashboard').addEventListener('click', function() {
+        loadDashboardStats();
+        loadProgramsForEdit();
+    });
+    
+    // Add program form
+    document.getElementById('addProgramForm').addEventListener('submit', handleAddProgram);
+    
+    // Price selection handling
+    document.getElementById('price').addEventListener('change', handlePriceChange);
+    document.getElementById('editPrice').addEventListener('change', handleEditPriceChange);
+    
+    // Edit modal
+    document.getElementById('closeEditModal').addEventListener('click', hideEditModal);
+    document.getElementById('editProgramForm').addEventListener('submit', handleEditProgram);
+    document.getElementById('deleteProgramBtn').addEventListener('click', handleDeleteProgram);
+    
+    // Close modal when clicking outside
+    document.getElementById('editModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            hideEditModal();
+        }
+    });
+}
+
+function switchTab(tabName) {
+    // Update navigation
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    
+    // Update content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(tabName).classList.add('active');
+    
+    // Update page title
+    const titles = {
+        'dashboard': 'Dashboard',
+        'programs-add': 'Add New Program',
+        'programs-edit': 'Manage Programs'
+    };
+    document.getElementById('pageTitle').textContent = titles[tabName];
+    
+    currentTab = tabName;
+    
+    // Load tab-specific data
+    if (tabName === 'programs-edit') {
+        loadProgramsForEdit();
+    }
+}
+
+async function loadDashboardStats() {
+    try {
+        const response = await fetch('/api/stats', {
+            headers: {
+                'Authorization': `Bearer ${adminToken}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load stats');
+        }
+        
+        const stats = await response.json();
+        
+        document.getElementById('activeUsers').textContent = stats.activeUsers;
+        document.getElementById('totalPrograms').textContent = stats.totalPrograms;
+        document.getElementById('lastUpdate').textContent = formatTime(stats.lastUpdate);
+    } catch (error) {
+        console.error('Error loading stats:', error);
+        document.getElementById('activeUsers').textContent = '0';
+        document.getElementById('totalPrograms').textContent = '0';
+        document.getElementById('lastUpdate').textContent = 'Error';
+    }
+}
+
+async function loadProgramsForEdit() {
+    try {
+        const response = await fetch('/api/programs');
+        if (!response.ok) {
+            throw new Error('Failed to load programs');
+        }
+        
+        programs = await response.json();
+        displayProgramsForEdit(programs);
+    } catch (error) {
+        console.error('Error loading programs:', error);
+        showEditEmptyState();
+    }
+}
+
+function displayProgramsForEdit(programs) {
+    const editList = document.getElementById('programsEditList');
+    const emptyState = document.getElementById('editEmptyState');
+    
+    if (programs.length === 0) {
+        showEditEmptyState();
+        return;
+    }
+    
+    emptyState.style.display = 'none';
+    
+    editList.innerHTML = programs.map(program => {
+        const priceDisplay = program.price === 'FREE' ? 'FREE' : `$${program.price}`;
+        const createdDate = new Date(program.createdAt).toLocaleDateString();
+        
+        return `
+            <div class="program-edit-item">
+                <div class="program-edit-info">
+                    <h4>${escapeHtml(program.title)}</h4>
+                    <p>${escapeHtml(program.shortDescription)}</p>
+                    <div class="program-meta">
+                        <span>Price: ${priceDisplay}</span>
+                        <span>Created: ${createdDate}</span>
+                        <span>Contact: ${escapeHtml(program.contactInfo)}</span>
+                    </div>
+                </div>
+                <div class="program-edit-actions">
+                    <button class="edit-btn" onclick="editProgram('${program.id}')">
+                        <i data-feather="edit"></i>
+                        Edit
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    feather.replace();
+}
+
+function showEditEmptyState() {
+    document.getElementById('programsEditList').innerHTML = '';
+    document.getElementById('editEmptyState').style.display = 'block';
+    feather.replace();
+}
+
+function handlePriceChange() {
+    const priceSelect = document.getElementById('price');
+    const customPriceGroup = document.getElementById('customPriceGroup');
+    
+    if (priceSelect.value === 'custom') {
+        customPriceGroup.style.display = 'block';
+        document.getElementById('customPrice').required = true;
+    } else {
+        customPriceGroup.style.display = 'none';
+        document.getElementById('customPrice').required = false;
+    }
+}
+
+function handleEditPriceChange() {
+    const priceSelect = document.getElementById('editPrice');
+    const customPriceGroup = document.getElementById('editCustomPriceGroup');
+    
+    if (priceSelect.value === 'custom') {
+        customPriceGroup.style.display = 'block';
+        document.getElementById('editCustomPrice').required = true;
+    } else {
+        customPriceGroup.style.display = 'none';
+        document.getElementById('editCustomPrice').required = false;
+    }
+}
+
+async function handleAddProgram(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    let price = formData.get('price');
+    
+    if (price === 'custom') {
+        price = formData.get('customPrice');
+    }
+    
+    const programData = {
+        title: formData.get('title'),
+        shortDescription: formData.get('shortDescription'),
+        fullDescription: formData.get('fullDescription'),
+        mediaLink: formData.get('mediaLink'),
+        price: price,
+        contactInfo: formData.get('contactInfo'),
+        programPassword: formData.get('programPassword')
+    };
+    
+    const errorDiv = document.getElementById('addProgramError');
+    const successDiv = document.getElementById('addProgramSuccess');
+    
+    try {
+        const response = await fetch('/api/programs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${adminToken}`
+            },
+            body: JSON.stringify(programData)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            successDiv.textContent = 'Program created successfully!';
+            successDiv.style.display = 'block';
+            errorDiv.style.display = 'none';
+            
+            // Reset form
+            e.target.reset();
+            document.getElementById('customPriceGroup').style.display = 'none';
+            
+            // Refresh programs list and stats
+            loadProgramsForEdit();
+            loadDashboardStats();
+            
+            // Hide success message after 3 seconds
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 3000);
+        } else {
+            errorDiv.textContent = result.error || 'Failed to create program';
+            errorDiv.style.display = 'block';
+            successDiv.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error creating program:', error);
+        errorDiv.textContent = 'Network error. Please try again.';
+        errorDiv.style.display = 'block';
+        successDiv.style.display = 'none';
+    }
+}
+
+function editProgram(id) {
+    const program = programs.find(p => p.id === id);
+    if (!program) {
+        console.error('Program not found');
+        return;
+    }
+    
+    // Populate form
+    document.getElementById('editProgramId').value = program.id;
+    document.getElementById('editTitle').value = program.title;
+    document.getElementById('editShortDescription').value = program.shortDescription;
+    document.getElementById('editFullDescription').value = program.fullDescription;
+    document.getElementById('editMediaLink').value = program.mediaLink || '';
+    document.getElementById('editContactInfo').value = program.contactInfo;
+    document.getElementById('editProgramPassword').value = '';
+    
+    // Handle price
+    const standardPrices = ['FREE', '9.99', '19.99', '29.99', '49.99', '99.99'];
+    if (standardPrices.includes(program.price)) {
+        document.getElementById('editPrice').value = program.price;
+        document.getElementById('editCustomPriceGroup').style.display = 'none';
+    } else {
+        document.getElementById('editPrice').value = 'custom';
+        document.getElementById('editCustomPrice').value = program.price;
+        document.getElementById('editCustomPriceGroup').style.display = 'block';
+    }
+    
+    // Show modal
+    document.getElementById('editModal').classList.add('show');
+    document.getElementById('editModal').style.display = 'flex';
+}
+
+function hideEditModal() {
+    document.getElementById('editModal').classList.remove('show');
+    document.getElementById('editModal').style.display = 'none';
+    document.getElementById('editProgramForm').reset();
+    document.getElementById('editProgramError').style.display = 'none';
+    document.getElementById('editProgramSuccess').style.display = 'none';
+    document.getElementById('editCustomPriceGroup').style.display = 'none';
+}
+
+async function handleEditProgram(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const programId = formData.get('programId');
+    let price = formData.get('price');
+    
+    if (price === 'custom') {
+        price = formData.get('customPrice');
+    }
+    
+    const programData = {
+        title: formData.get('title'),
+        shortDescription: formData.get('shortDescription'),
+        fullDescription: formData.get('fullDescription'),
+        mediaLink: formData.get('mediaLink'),
+        price: price,
+        contactInfo: formData.get('contactInfo'),
+        programPassword: formData.get('programPassword')
+    };
+    
+    const errorDiv = document.getElementById('editProgramError');
+    const successDiv = document.getElementById('editProgramSuccess');
+    
+    try {
+        const response = await fetch(`/api/programs/${programId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${adminToken}`
+            },
+            body: JSON.stringify(programData)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            successDiv.textContent = 'Program updated successfully!';
+            successDiv.style.display = 'block';
+            errorDiv.style.display = 'none';
+            
+            // Refresh programs list
+            loadProgramsForEdit();
+            loadDashboardStats();
+            
+            // Hide modal after 2 seconds
+            setTimeout(() => {
+                hideEditModal();
+            }, 2000);
+        } else {
+            errorDiv.textContent = result.error || 'Failed to update program';
+            errorDiv.style.display = 'block';
+            successDiv.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error updating program:', error);
+        errorDiv.textContent = 'Network error. Please try again.';
+        errorDiv.style.display = 'block';
+        successDiv.style.display = 'none';
+    }
+}
+
+async function handleDeleteProgram() {
+    const programId = document.getElementById('editProgramId').value;
+    
+    if (!confirm('Are you sure you want to delete this program? This action cannot be undone.')) {
+        return;
+    }
+    
+    const errorDiv = document.getElementById('editProgramError');
+    
+    try {
+        const response = await fetch(`/api/programs/${programId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${adminToken}`
+            }
+        });
+        
+        if (response.ok) {
+            // Refresh programs list and stats
+            loadProgramsForEdit();
+            loadDashboardStats();
+            hideEditModal();
+        } else {
+            const result = await response.json();
+            errorDiv.textContent = result.error || 'Failed to delete program';
+            errorDiv.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error deleting program:', error);
+        errorDiv.textContent = 'Network error. Please try again.';
+        errorDiv.style.display = 'block';
+    }
+}
+
+async function handleLogout() {
+    try {
+        await fetch('/api/logout', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${adminToken}`
+            }
+        });
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
+    
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminUser');
+    window.location.href = 'index.html';
+}
+
+function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 60000) {
+        return 'Just now';
+    } else if (diff < 3600000) {
+        const minutes = Math.floor(diff / 60000);
+        return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    } else if (diff < 86400000) {
+        const hours = Math.floor(diff / 3600000);
+        return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    } else {
+        return date.toLocaleDateString();
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+    </script>
 </body>
 </html>
